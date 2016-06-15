@@ -13,7 +13,8 @@ extern "C" {
 #define TASK_DELAY_MS                   (0)
 #define TASK_PERIOD_MS                  (5)
 
-#define CWDT_DEFAULT_PERIOD_MS          (5000)
+#define CWDT_DISABLED_PERIOD_MS         (0)
+#define CWDT_DEFAULT_PERIOD_MS          (CWDT_DISABLED_PERIOD_MS)
 
 namespace i2c_hat {
 
@@ -25,7 +26,7 @@ CommWatchdog::CommWatchdog() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS) {
     _period = EepromData_readUInt32(EEP_VIRT_ADR_CWDT_PERIOD, CWDT_DEFAULT_PERIOD_MS);
     _periodCnt = 0;
-    _enabled = false;
+    _monitoring = false;
 }
 
 /**
@@ -62,12 +63,12 @@ void CommWatchdog::feed() {
   * @retval None
   */
 void CommWatchdog::task() {
-    if(_enabled) {
+    if(_monitoring) {
         _periodCnt += TASK_PERIOD_MS;
         if(_periodCnt >= _period) {
             sendEvent(MODULE_EVENT_CWDT_TIMEOUT);
             _periodCnt = 0;
-            _enabled = false;
+            _monitoring = false;
         }
     }
 }
@@ -84,9 +85,6 @@ uint32_t CommWatchdog::processRequest(I2CFrame *request, I2CFrame *response) {
     uint32_t responseFlag = 0;
 
     feed();
-    if(!_enabled) {
-        _enabled = true;
-    }
 
     switch(request->getCmd()) {
     case CMD_CWDT_SET_PERIOD:
@@ -110,6 +108,12 @@ uint32_t CommWatchdog::processRequest(I2CFrame *request, I2CFrame *response) {
     default:
         responseFlag = 0;
     }
+
+    if((_period != CWDT_DISABLED_PERIOD_MS) && !_monitoring) {
+        _monitoring = true;
+        sendEvent(MODULE_EVENT_CWDT_MONITORING);
+    }
+
     return responseFlag;
 }
 

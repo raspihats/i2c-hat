@@ -16,7 +16,7 @@ class CommWatchdog: public Module {
 private:
     uint32_t _periodCnt;
     uint32_t _period;
-    bool _enabled;
+    bool _monitoring;
 
     void setCwdtPeriod(const uint32_t period);
     uint32_t getCwdtPeriod();

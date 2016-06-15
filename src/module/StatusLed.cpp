@@ -40,7 +40,10 @@ StatusLed::StatusLed(DigitalOutputPin* const pin) :
   * @retval None
   */
 void StatusLed::receiveEvent(const uint32_t event) {
-    if(event == MODULE_EVENT_CWDT_TIMEOUT) {
+    if(event == MODULE_EVENT_CWDT_MONITORING) {
+        _communication = true;
+    }
+    else if(event == MODULE_EVENT_CWDT_TIMEOUT) {
         _communication = false;
     }
 }
@@ -118,7 +121,7 @@ void StatusLed::task() {
 uint32_t StatusLed::processRequest(I2CFrame *request, I2CFrame *response) {
     (void)request;
     (void)response;
-    _communication = true;
+//    _communication = true;
     return 0;
 }
 
