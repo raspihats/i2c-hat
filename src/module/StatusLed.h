@@ -15,8 +15,14 @@ namespace i2c_hat {
 
 class StatusLed: public Module {
 private:
+    typedef enum {
+        STATE_LED_INIT,
+        STATE_LED_ON,
+        STATE_LED_OFF_SHORT,
+        STATE_LED_OFF_LONG,
+    } State;
     DigitalOutputPin *_pin;
-    bool _communication;
+    bool _cwdtMonitoring;
     void receiveEvent(const uint32_t event);
 public:
     StatusLed(DigitalOutputPin* const statusLedPin);

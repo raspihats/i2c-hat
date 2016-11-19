@@ -141,7 +141,7 @@ uint32_t DigitalOutputs::getAllChannels() {
   * @retval None
   */
 void DigitalOutputs::receiveEvent(const uint32_t event) {
-    if(event == MODULE_EVENT_CWDT_TIMEOUT) {
+    if(event == EVENT_CWDT_TIMEOUT) {
         loadSafetyValue();
     }
 }

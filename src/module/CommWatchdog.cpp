@@ -26,7 +26,8 @@ CommWatchdog::CommWatchdog() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS) {
     _period = EepromData_readUInt32(EEP_VIRT_ADR_CWDT_PERIOD, CWDT_DEFAULT_PERIOD_MS);
     _periodCnt = 0;
-    _monitoring = false;
+    _state = STATE_DISABLED;
+    _communication = false;
 }
 
 /**
@@ -54,7 +55,7 @@ uint32_t CommWatchdog::getCwdtPeriod() {
   * @retval None
   */
 void CommWatchdog::feed() {
-    _periodCnt = 0;
+    _communication = true;
 }
 
 /**
@@ -63,14 +64,52 @@ void CommWatchdog::feed() {
   * @retval None
   */
 void CommWatchdog::task() {
-    if(_monitoring) {
-        _periodCnt += TASK_PERIOD_MS;
-        if(_periodCnt >= _period) {
-            sendEvent(MODULE_EVENT_CWDT_TIMEOUT);
-            _periodCnt = 0;
-            _monitoring = false;
+
+    switch(_state) {
+    case STATE_DISABLED:
+        if(_communication) {
+            if(_period > CWDT_DISABLED_PERIOD_MS) {
+                _periodCnt = 0;
+                sendEvent(EVENT_CWDT_MONITORING);
+                _state = STATE_MONITORING;
+            }
         }
+        break;
+    case STATE_MONITORING:
+        if(_communication) {
+            if(_period == CWDT_DISABLED_PERIOD_MS) {
+                sendEvent(EVENT_CWDT_DISABLED);
+                _state = STATE_DISABLED;
+            }
+            _periodCnt = 0;
+        }
+        else {
+            _periodCnt += TASK_PERIOD_MS;
+            if(_periodCnt >= _period) {
+                _periodCnt = 0;
+                sendEvent(EVENT_CWDT_TIMEOUT);
+                _state = STATE_TIMEOUT;
+            }
+        }
+        break;
+    case STATE_TIMEOUT:
+        if(_communication) {
+            if(_period > CWDT_DISABLED_PERIOD_MS) {
+                _periodCnt = 0;
+                sendEvent(EVENT_CWDT_MONITORING);
+                _state = STATE_MONITORING;
+            }
+            else {
+                _state = STATE_DISABLED;
+            }
+        }
+        break;
+    default:
+        _periodCnt = 0;
+        _state = STATE_DISABLED;
     }
+
+    _communication = false;
 }
 
 /**
@@ -107,11 +146,6 @@ uint32_t CommWatchdog::processRequest(I2CFrame *request, I2CFrame *response) {
         break;
     default:
         responseFlag = 0;
-    }
-
-    if((_period != CWDT_DISABLED_PERIOD_MS) && !_monitoring) {
-        _monitoring = true;
-        sendEvent(MODULE_EVENT_CWDT_MONITORING);
     }
 
     return responseFlag;

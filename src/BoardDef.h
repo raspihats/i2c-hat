@@ -8,7 +8,7 @@
 #ifndef BOARDDEF_H_
 #define BOARDDEF_H_
 
-#include "stdint.h"
+#include <stdint.h>
 #include "stm32f0xx.h"
 
 typedef struct {
@@ -32,12 +32,12 @@ typedef struct {
 
 #define FW_VERSION_MAJOR                        (1)
 #define FW_VERSION_MINOR                        (1)
-#define FW_VERSION_PATCH                        (0)
+#define FW_VERSION_PATCH                        (1)
 #define FW_VERSION_SIZE                         (3)
 
 #define BOARD_NAME_SIZE                         (25)
 
-#define DI16
+#define DI6RLY6
 
 #ifdef DI16
     #define BOARD_NAME                          "Di16 I2C-HAT"

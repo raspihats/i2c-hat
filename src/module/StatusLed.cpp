@@ -14,13 +14,6 @@
 #define STATUS_LED_OFF_SHORT_TIME_MS    (75)
 #define STATUS_LED_OFF_LONG_TIME_MS     (3000)
 
-typedef enum {
-    ST_LED_INIT,
-    ST_LED_ON,
-    ST_LED_OFF_SHORT,
-    ST_LED_OFF_LONG,
-} state_t;
-
 namespace i2c_hat {
 
 /**
@@ -31,7 +24,7 @@ namespace i2c_hat {
 StatusLed::StatusLed(DigitalOutputPin* const pin) :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS) {
     _pin = pin;
-    _communication = false;
+    _cwdtMonitoring = false;
 }
 
 /**
@@ -40,11 +33,11 @@ StatusLed::StatusLed(DigitalOutputPin* const pin) :
   * @retval None
   */
 void StatusLed::receiveEvent(const uint32_t event) {
-    if(event == MODULE_EVENT_CWDT_MONITORING) {
-        _communication = true;
+    if(event == EVENT_CWDT_MONITORING) {
+        _cwdtMonitoring = true;
     }
-    else if(event == MODULE_EVENT_CWDT_TIMEOUT) {
-        _communication = false;
+    else if((event == EVENT_CWDT_DISABLED) or (event == EVENT_CWDT_TIMEOUT)) {
+        _cwdtMonitoring = false;
     }
 }
 
@@ -58,15 +51,15 @@ void StatusLed::task() {
     static uint32_t ledOffPeriodCnt = 0;
     static uint32_t pulseCnt = 0;
     static bool communication = false;
-    static state_t state = ST_LED_INIT;
+    static State state = STATE_LED_INIT;
 
     switch(state) {
-    case ST_LED_INIT:
+    case STATE_LED_INIT:
         _pin->write(true);
         ledOnPeriodCnt = 0;
-        state = ST_LED_ON;
+        state = STATE_LED_ON;
         break;
-    case ST_LED_ON:
+    case STATE_LED_ON:
         if(ledOnPeriodCnt < STATUS_LED_ON_TIME_MS) {
             ledOnPeriodCnt += TASK_PERIOD_MS;
         }
@@ -74,39 +67,39 @@ void StatusLed::task() {
             _pin->write(false);
             ledOffPeriodCnt = 0;
             if(communication && (pulseCnt == 0)) {
-                state = ST_LED_OFF_SHORT;
+                state = STATE_LED_OFF_SHORT;
             }
             else {
-                state = ST_LED_OFF_LONG;
+                state = STATE_LED_OFF_LONG;
             }
         }
         break;
-    case ST_LED_OFF_SHORT:
+    case STATE_LED_OFF_SHORT:
         if(ledOffPeriodCnt < STATUS_LED_OFF_SHORT_TIME_MS) {
             ledOffPeriodCnt += TASK_PERIOD_MS;
         }
         else {
             _pin->write(true);
             ledOnPeriodCnt = 0;
-            state = ST_LED_ON;
+            state = STATE_LED_ON;
             pulseCnt++;
         }
         break;
-    case ST_LED_OFF_LONG:
+    case STATE_LED_OFF_LONG:
         if(ledOffPeriodCnt < STATUS_LED_OFF_LONG_TIME_MS) {
             ledOffPeriodCnt += TASK_PERIOD_MS;
         }
         else {
             _pin->write(true);
             ledOnPeriodCnt = 0;
-            state = ST_LED_ON;
+            state = STATE_LED_ON;
             pulseCnt = 0;
-            communication = _communication;
+            communication = _cwdtMonitoring;
         }
         break;
     default:
         ledOnPeriodCnt = 0;
-        state = ST_LED_ON;
+        state = STATE_LED_ON;
         break;
     }
 }
