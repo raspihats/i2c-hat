@@ -149,23 +149,27 @@ uint32_t I2CPort::getBufferSize() {
 void I2CPort::transfer(uint32_t * const rxLength, uint32_t * const txLength) {
     *rxLength = 0;
 
+    if(I2C_GetFlagStatus(_port->port, I2C_FLAG_BERR) == SET) {
+        I2C_Cmd(_port->port, DISABLE);
+        I2C_Cmd(_port->port, ENABLE);
+        _state = I2C_ST_INIT;
+    }
+
+
     switch(_state) {
 
     case I2C_ST_INIT:
         initReceiveDma();
-        _state = I2C_ST_WAIT_ADDR_FLAG;
+        _state = I2C_ST_WAIT_TRANSFER_START;
         break;
 
-    case I2C_ST_WAIT_ADDR_FLAG:
+    case I2C_ST_WAIT_TRANSFER_START:
         if( (I2C_GetFlagStatus(_port->port, I2C_FLAG_ADDR) == SET)
-                && (I2C_GetFlagStatus(_port->port, I2C_FLAG_STOPF) == RESET)
-                && (I2C_GetFlagStatus(_port->port, I2C_FLAG_BERR) == RESET) ) {
+                && (I2C_GetFlagStatus(_port->port, I2C_FLAG_STOPF) == RESET) ) {
 
             if(I2C_GetTransferDirection(_port->port) == I2C_Direction_Transmitter) {
                 // Master wants to transmit data to Slave, clock is stretched
                 initReceiveDma();
-                I2C_ClearFlag(_port->port, I2C_FLAG_ADDR); // release clock stretching
-                _state = I2C_ST_WAIT_STOP_FLAG;
             }
             else {
                 // Master wants to receive data from Slave, clock is stretched
@@ -173,52 +177,26 @@ void I2CPort::transfer(uint32_t * const rxLength, uint32_t * const txLength) {
                     initTransmitDma();
                     *txLength = 0;
                 }
-                I2C_ClearFlag(_port->port, I2C_FLAG_ADDR); // release clock stretching
-                _state = I2C_ST_WAIT_STOP_FLAG;
             }
-        }
-        else if( (I2C_GetFlagStatus(_port->port, I2C_FLAG_STOPF) == SET)
-                || (I2C_GetFlagStatus(_port->port, I2C_FLAG_BERR) == SET) ) {
-            I2C_Cmd(_port->port, DISABLE);
-            I2C_Cmd(_port->port, ENABLE);
+            I2C_ClearFlag(_port->port, I2C_FLAG_ADDR); // release clock stretching
+            _state = I2C_ST_WAIT_TRANSFER_STOP;
         }
         break;
 
-    case I2C_ST_WAIT_STOP_FLAG:
+    case I2C_ST_WAIT_TRANSFER_STOP:
         if( (I2C_GetFlagStatus(_port->port, I2C_FLAG_STOPF) == SET)
-            && (I2C_GetFlagStatus(_port->port, I2C_FLAG_ADDR) == RESET)
-            && (I2C_GetFlagStatus(_port->port, I2C_FLAG_BERR) == RESET) ) {
+                || (I2C_GetFlagStatus(_port->port, I2C_FLAG_ADDR) == SET) ) {
 
             I2C_ClearFlag(_port->port, I2C_FLAG_STOPF);
             if(I2C_GetTransferDirection(_port->port) == I2C_Direction_Transmitter) {
                 *rxLength = _bufferSize - _port->dmaRxChannel->CNDTR;
-//                dataReceived();
             }
-            _state = I2C_ST_WAIT_ADDR_FLAG;
-        }
-        else if( (I2C_GetFlagStatus(_port->port, I2C_FLAG_ADDR) == SET)
-                || (I2C_GetFlagStatus(_port->port, I2C_FLAG_BERR) == SET) ) {
-            I2C_Cmd(_port->port, DISABLE);
-            I2C_Cmd(_port->port, ENABLE);
-            _state = I2C_ST_WAIT_ADDR_FLAG;
-        }
-        else {
-            // Master wants to receive data
-            if(I2C_GetTransferDirection(_port->port) == I2C_Direction_Receiver) {
-                if( (_port->dmaTxChannel->CNDTR == 0) && (I2C_GetFlagStatus(_port->port, I2C_FLAG_TXE) == SET) ) {
-                    /*
-                     * Load dummy byte(0xFF) in case Master want's to read more bytes than the
-                     * DMA has to transmit, as to not block the I2C bus by clock-stretching.
-                     * ### Master reads more bytes than expected ###
-                     */
-                    I2C_SendData(_port->port, 0xFF);
-                }
-            }
+            _state = I2C_ST_WAIT_TRANSFER_START;
         }
         break;
 
     default:
-        _state = I2C_ST_WAIT_ADDR_FLAG;
+        _state = I2C_ST_WAIT_TRANSFER_START;
     }
 }
 

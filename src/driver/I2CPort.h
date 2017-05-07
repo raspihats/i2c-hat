@@ -10,22 +10,21 @@
 
 #include "BoardDef.h"
 
-typedef enum {
-    I2C_ST_INIT,
-    I2C_ST_WAIT_ADDR_FLAG,
-    I2C_ST_WAIT_STOP_FLAG,
-} i2c_state_t;
-
 namespace i2c_hat {
 
 class I2CPort {
 private:
+    enum State {
+        I2C_ST_INIT,
+        I2C_ST_WAIT_TRANSFER_START,
+        I2C_ST_WAIT_TRANSFER_STOP,
+    };
     i2c_port_t *_port;
     uint32_t _bufferSize;
     uint8_t *_rxBuffer;
     uint8_t *_txBuffer;
     uint8_t _address;
-    i2c_state_t _state;
+    State _state;
     void initTransmitDma();
     void initReceiveDma();
 public:

@@ -36,7 +36,7 @@ DigitalInputs::DigitalInputs(DigitalInputPort *port) :
         _fallingEdgeCounters[channel] = 0;
     }
     _filteredInputs = port->read();
-    _integratorUpperLimit = DEBOUNCE_TIME_MS * TASK_PERIOD_MS;
+    _integratorUpperLimit = DEBOUNCE_TIME_MS / TASK_PERIOD_MS;
 }
 
 /**
