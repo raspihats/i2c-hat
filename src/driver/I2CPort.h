@@ -16,8 +16,7 @@ class I2CPort {
 private:
     enum State {
         I2C_ST_INIT,
-        I2C_ST_WAIT_TRANSFER_START,
-        I2C_ST_WAIT_TRANSFER_STOP,
+        I2C_ST_WAIT_TRANSFER,
     };
     i2c_port_t *_port;
     uint32_t _bufferSize;

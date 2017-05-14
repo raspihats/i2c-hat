@@ -32,12 +32,12 @@ typedef struct {
 
 #define FW_VERSION_MAJOR                        (1)
 #define FW_VERSION_MINOR                        (1)
-#define FW_VERSION_PATCH                        (2)
+#define FW_VERSION_PATCH                        (3)
 #define FW_VERSION_SIZE                         (3)
 
 #define BOARD_NAME_SIZE                         (25)
 
-#define DQ16oc
+#define RLY10
 
 #ifdef DI16
     #define BOARD_NAME                          "Di16 I2C-HAT"
