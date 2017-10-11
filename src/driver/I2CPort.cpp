@@ -13,6 +13,7 @@ I2CPort::I2CPort(i2c_port_t *port, const uint32_t bufferSize, const uint8_t addr
     GPIO_InitTypeDef GPIO_InitStructure;
     I2C_InitTypeDef I2C_InitStructure;
     uint32_t i;
+    uint16_t pinSource;
 
     _port = port;
     _bufferSize = bufferSize;
@@ -29,9 +30,10 @@ I2CPort::I2CPort(i2c_port_t *port, const uint32_t bufferSize, const uint8_t addr
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     for(i = 0; i < 2; i++) {
-        GPIO_InitStructure.GPIO_Pin = _port->pins[i].gpio.pin;
-        GPIO_Init(_port->pins[i].gpio.port, &GPIO_InitStructure);
-        GPIO_PinAFConfig(_port->pins[i].gpio.port, _port->pins[i].pinSource, _port->pins[i].alternateFunction);
+        GPIO_InitStructure.GPIO_Pin = _port->pins[i].pin;
+        GPIO_Init(_port->pins[i].port, &GPIO_InitStructure);
+        pinSource = Driver::getPinSource(_port->pins[i].pin);
+        GPIO_PinAFConfig(_port->pins[i].port, pinSource, _port->pins[i].altFunction);
     }
 
     //I2C peripheral

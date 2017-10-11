@@ -9,7 +9,7 @@
 
 namespace i2c_hat {
 
-DigitalOutputPin::DigitalOutputPin(gpio_t* gpio, const bool inverted) {
+DigitalOutputPin::DigitalOutputPin(gpio_t* gpio, const bool inverted, const OutputType output_type) {
     GPIO_InitTypeDef GPIO_InitStructure;
     BitAction bitState;
 
@@ -19,7 +19,13 @@ DigitalOutputPin::DigitalOutputPin(gpio_t* gpio, const bool inverted) {
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    switch(output_type) {
+    case OT_OPEN_DRAIN:
+    	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    	break;
+    default:
+    	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    }
     GPIO_InitStructure.GPIO_Pin = _gpio->pin;
     // set output state before changing pin mode form input to output
     bitState = _inverted ? Bit_SET : Bit_RESET;

@@ -17,7 +17,11 @@ private:
     gpio_t* _gpio;
     bool _inverted;
 public:
-    DigitalOutputPin(gpio_t* pin, const bool inverted = false);
+    enum OutputType {
+    	OT_PUSH_PULL,
+		OT_OPEN_DRAIN,
+    };
+    DigitalOutputPin(gpio_t* pin, const bool inverted = false, const OutputType output_type = OT_PUSH_PULL);
     bool read();
     void write(bool state);
 };

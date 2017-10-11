@@ -13,22 +13,36 @@ DigitalOutputPort::DigitalOutputPort(gpio_t* gpios, const uint32_t size, const b
     GPIO_InitTypeDef GPIO_InitStructure;
     BitAction bitState;
     uint32_t channel;
+    uint16_t pinSource;
 
     _gpios = gpios;
     _size = size;
     _inverted = inverted;
 
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = oType;
-    GPIO_InitStructure.GPIO_PuPd = pupd;
-
     for(channel = 0; channel < _size; channel++) {
-        // set output state before changing pin mode form input to output
-        bitState = _inverted ? Bit_SET : Bit_RESET;
-        GPIO_WriteBit(_gpios[channel].port, _gpios[channel].pin, bitState);
-        GPIO_InitStructure.GPIO_Pin = _gpios[channel].pin;
-        GPIO_Init(_gpios[channel].port, &GPIO_InitStructure);
+        if(_gpios[channel].altFunction != GPIO_AF_DISABLED) {
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+            GPIO_InitStructure.GPIO_OType = oType;
+            GPIO_InitStructure.GPIO_PuPd = pupd;
+
+            GPIO_InitStructure.GPIO_Pin = _gpios[channel].pin;
+            GPIO_Init(_gpios[channel].port, &GPIO_InitStructure);
+            pinSource = Driver::getPinSource(_gpios[channel].pin);
+            GPIO_PinAFConfig(_gpios[channel].port, pinSource, _gpios[channel].altFunction);
+        }
+        else {
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+            GPIO_InitStructure.GPIO_OType = oType;
+            GPIO_InitStructure.GPIO_PuPd = pupd;
+
+            // set output state before changing pin mode form input to output
+            bitState = _inverted ? Bit_SET : Bit_RESET;
+            GPIO_WriteBit(_gpios[channel].port, _gpios[channel].pin, bitState);
+            GPIO_InitStructure.GPIO_Pin = _gpios[channel].pin;
+            GPIO_Init(_gpios[channel].port, &GPIO_InitStructure);
+        }
     }
 }
 

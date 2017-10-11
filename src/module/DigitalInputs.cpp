@@ -11,7 +11,7 @@
 #define TASK_DELAY_MS                   (0)
 #define TASK_PERIOD_MS                  (1)
 
-#define DEBOUNCE_TIME_MS                (4)
+#define DEBOUNCE_TIME_MS                (2)
 
 namespace i2c_hat {
 
@@ -20,20 +20,23 @@ namespace i2c_hat {
   * @param  dinPort: pointer to a DigitalInputPort
   * @retval None
   */
-DigitalInputs::DigitalInputs(DigitalInputPort *port) :
+DigitalInputs::DigitalInputs(DigitalInputPort *port, DigitalOutputPin *irqPin) :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS) {
     uint32_t channelCount;
     uint32_t channel;
 
     _port = port;
+    _irqPin = irqPin;
     channelCount = _port->getSize();
+    _integrators = new uint32_t[channelCount];
     _risingEdgeCounters = new uint32_t[channelCount];
     _fallingEdgeCounters = new uint32_t[channelCount];
-    _integrators = new uint32_t[channelCount];
+    _encoders = new uint16_t[channelCount];
     for(channel = 0; channel < channelCount; channel++) {
+    	_integrators[channel] = 0;
         _risingEdgeCounters[channel] = 0;
-        _integrators[channel] = 0;
         _fallingEdgeCounters[channel] = 0;
+        _encoders[channel] = 0;	// two encoder counters(CW and CCW) for every encoder channel(two DIs)
     }
     _filteredInputs = port->read();
     _integratorUpperLimit = DEBOUNCE_TIME_MS / TASK_PERIOD_MS;
@@ -64,6 +67,7 @@ di_errcode_t DigitalInputs::getSingleChannel(const uint32_t channel, uint8_t* co
   * @retval digital input channel states
   */
 uint32_t DigitalInputs::getAllChannels() {
+	_irqPin->write(false);
     return _filteredInputs;
 }
 
@@ -138,6 +142,30 @@ void DigitalInputs::resetAllCounters() {
 }
 
 /**
+  * @brief  Gets encoder CW and CCW counters
+  * @param  channel: encoder channel index
+  * @param  pointer where to store counters value
+  * @retval error code
+  */
+di_errcode_t DigitalInputs::getEncoder(const uint32_t channel, uint32_t* const value) {
+    di_errcode_t errCode;
+    uint32_t cwCounterIndex;
+    uint32_t ccwCounterIndex;
+
+
+    if(channel < (_port->getSize() >> 1)) {
+    	cwCounterIndex = channel << 1;
+    	ccwCounterIndex = (channel << 1) + 1;
+		*value = (_encoders[cwCounterIndex] << 16) + _encoders[ccwCounterIndex];
+		errCode = DI_ERRCODE_SUCCESS;
+    }
+    else {
+        errCode = DI_ERRCODE_CHANNEL_OUT_OF_RANGE;
+    }
+    return errCode;
+}
+
+/**
   * @brief  DigitalInputs cooperative task implementation
   * @param  None
   * @retval None
@@ -145,7 +173,10 @@ void DigitalInputs::resetAllCounters() {
 void DigitalInputs::task() {
     uint32_t channel;
     uint32_t channelCount;
+    uint32_t filteredInputsOld;
+    bool chA, chB, chAOld, chBOld;
 
+    filteredInputsOld = _filteredInputs;
     channelCount = _port->getSize();
     for(channel = 0; channel < channelCount; channel++) {
         /* Step 1:
@@ -178,6 +209,30 @@ void DigitalInputs::task() {
                 _fallingEdgeCounters[channel]++;
             }
         }
+
+        // Generate IRQ
+        if(_filteredInputs != filteredInputsOld) {
+        	_irqPin->write(true);
+        }
+
+        // Encoders CW and CCW counters
+        if(channel & 0x01) { // enter here every second encoder input channel, even input channel numbers
+        	chAOld = (filteredInputsOld >> (channel - 1)) & 0x01;
+        	chBOld = (filteredInputsOld >> channel) & 0x01;
+        	chA = (_filteredInputs >> (channel - 1)) & 0x01;
+        	chB = (_filteredInputs >> channel) & 0x01;
+
+        	if((chA == true) and (chA != chAOld)) {
+        		if(chB == false) {
+        			// increment CW counter
+        			_encoders[channel - 1] = (_encoders[channel - 1] + 1) & 0xFFFF;
+        		}
+        		else {
+        			// increment CCW counter
+        			_encoders[channel] = (_encoders[channel] + 1) & 0xFFFF;
+        		}
+        	}
+        }
     }
 }
 
@@ -194,7 +249,6 @@ uint32_t DigitalInputs::processRequest(I2CFrame *request, I2CFrame *response) {
     uint8_t tempU8;
     uint8_t channel;
     uint8_t counterType;
-//    uint8_t *data;
 
     switch(request->getCmd()) {
     case CMD_DI_GET_ALL_CHANNEL_STATES:
@@ -246,6 +300,17 @@ uint32_t DigitalInputs::processRequest(I2CFrame *request, I2CFrame *response) {
             resetAllCounters();
             response->setLength(0);
             responseFlag = 1;
+        }
+        break;
+    case CMD_DI_GET_ENCODER:
+        if(request->getLength() == 1) {
+            channel = request->getData()[0];
+            if(getEncoder(channel, &tempU32) == DI_ERRCODE_SUCCESS) {
+                response->getData()[0] = channel;
+                Utils::convertUint32ToBytes(tempU32, &response->getData()[1]);
+                response->setLength(5);
+                responseFlag = 1;
+            }
         }
         break;
     default:

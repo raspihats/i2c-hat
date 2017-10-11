@@ -8,7 +8,7 @@
 #ifndef DRIVER_DIGITALOUTPUTPORT_H_
 #define DRIVER_DIGITALOUTPUTPORT_H_
 
-#include "BoardDef.h"
+#include "Driver.h"
 
 namespace i2c_hat {
 

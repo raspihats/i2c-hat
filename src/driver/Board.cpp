@@ -24,6 +24,7 @@ static gpio_t i2cLowNibbleAddressGpios[] = {I2C_ADDRESS_LOW_NIBBLE_GPIOS};
 static i2c_port_t i2cPort = {I2C_PORT};
 
 #ifdef DIGITAL_INPUT_CHANNEL_COUNT
+static gpio_t irqGpio = IRQ_GPIO;
 static gpio_t digitalInputsGpios[DIGITAL_INPUT_CHANNEL_COUNT] = {DIGITAL_INPUT_CHANNELS_GPIOS};
 #endif
 
@@ -52,6 +53,7 @@ Board::Board() {
     _i2cPort = new I2CPort(&i2cPort, I2C_BUFFER_SIZE, address);
 
 #ifdef DIGITAL_INPUT_CHANNEL_COUNT
+    _irqPin = new DigitalOutputPin(&irqGpio, true, DigitalOutputPin::OT_OPEN_DRAIN);
     _digitalInputPort = new DigitalInputPort(digitalInputsGpios, DIGITAL_INPUT_CHANNEL_COUNT, GPIO_PuPd_NOPULL, true);
 #endif
 
@@ -120,6 +122,10 @@ DigitalInputPort* Board::getI2CLowNibbleAddressPort() {
 
 I2CPort* Board::getI2CPort() {
     return _i2cPort;
+}
+
+DigitalOutputPin* Board::getIrqPin() {
+    return _irqPin;
 }
 
 DigitalInputPort* Board::getDigitalInputPort() {

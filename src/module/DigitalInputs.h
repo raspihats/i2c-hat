@@ -10,6 +10,7 @@
 
 #include "Module.h"
 #include "driver/DigitalInputPort.h"
+#include "driver/DigitalOutputPin.h"
 
 namespace i2c_hat {
 
@@ -28,19 +29,22 @@ typedef enum {
 class DigitalInputs: public Module {
 private:
     DigitalInputPort *_port;
+    DigitalOutputPin *_irqPin;
     uint32_t _integratorUpperLimit;
     uint32_t _filteredInputs;
     uint32_t *_risingEdgeCounters;
     uint32_t *_fallingEdgeCounters;
     uint32_t *_integrators;
+    uint16_t *_encoders;
 
     di_errcode_t getSingleChannel(const uint32_t channel, uint8_t* const state);
     uint32_t getAllChannels();
     di_errcode_t getSingleCounter(const uint32_t channel, const di_counter_type_t type, uint32_t* const value);
     di_errcode_t resetSingleCounter(const uint32_t channel, const di_counter_type_t type);
+    di_errcode_t getEncoder(const uint32_t channel, uint32_t* const value);
     void resetAllCounters();
 public:
-    DigitalInputs(DigitalInputPort *dinPort);
+    DigitalInputs(DigitalInputPort *dinPort, DigitalOutputPin *irqPin);
     void onInit(const uint32_t tickFrequency);
     void task();
     uint32_t processRequest(I2CFrame *request, I2CFrame *response);

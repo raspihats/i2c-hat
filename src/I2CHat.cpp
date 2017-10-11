@@ -27,7 +27,7 @@ I2CHat::I2CHat() : CooperativeScheduler(MAX_TASK_COUNT), Board() {
     registerModule(new StatusLed(getStatusLedPin()));
 
 #ifdef DIGITAL_INPUT_CHANNEL_COUNT
-    registerModule(new DigitalInputs(getDigitalInputPort()));
+    registerModule(new DigitalInputs(getDigitalInputPort(), getIrqPin()));
 #endif
 
 #ifdef DIGITAL_OUTPUT_CHANNEL_COUNT

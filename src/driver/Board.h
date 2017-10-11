@@ -27,6 +27,7 @@ private:
     DigitalInputPort *_i2cLowNibbleAddressPort;
     I2CPort *_i2cPort;
 
+    DigitalOutputPin *_irqPin;
     DigitalInputPort *_digitalInputPort;
     DigitalOutputPort *_digitalOutputPort;
 
@@ -45,6 +46,7 @@ public:
     DigitalOutputPin* getStatusLedPin();
     DigitalInputPort* getI2CLowNibbleAddressPort();
     I2CPort* getI2CPort();
+    DigitalOutputPin* getIrqPin();
     DigitalInputPort* getDigitalInputPort();
     DigitalOutputPort* getDigitalOutputPort();
     WatchDog* getWatchDog();

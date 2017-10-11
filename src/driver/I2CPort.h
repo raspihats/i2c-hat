@@ -8,6 +8,7 @@
 #ifndef DRIVER_I2CPORT_H_
 #define DRIVER_I2CPORT_H_
 
+#include <driver/Driver.h>
 #include "BoardDef.h"
 
 namespace i2c_hat {

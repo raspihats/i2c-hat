@@ -21,6 +21,7 @@
 #define CMD_DI_GET_COUNTER                      0x22
 #define CMD_DI_RESET_COUNTER                    0x23
 #define CMD_DI_RESET_ALL_COUNTERS               0x24
+#define CMD_DI_GET_ENCODER						0x25
 
 #define CMD_DO_SET_POWER_ON_VALUE               0x30
 #define CMD_DO_GET_POWER_ON_VALUE               0x31
