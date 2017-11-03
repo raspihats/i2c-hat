@@ -24,14 +24,14 @@ public:
     uint32_t reveive_buffer_size();
     uint8_t* transmit_buffer();
     uint32_t transmit_buffer_size();
-    void transfer(uint32_t * const receive_size, uint32_t * const transmit_size);
+    void transfer(uint32_t& receive_size, uint32_t& transmit_size);
 private:
     enum State {
         ST_INIT,
         ST_WAIT_ADR,
-        ST_WAIT_RX_STOP,
-        ST_WAIT_RX_PROCESSING,
-        ST_WAIT_TX_STOP,
+        ST_WAIT_MASTER_WRITE_STOP,
+        ST_WAIT_PROCESSING,
+        ST_WAIT_MASTER_READ_STOP,
         ST_WAIT_TRANSFER,
     };
     uint8_t             rx_buffer_[BUFFER_SIZE];

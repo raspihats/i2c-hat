@@ -70,7 +70,7 @@ void I2CHat::Run() {
 
     Dispatch();
     receive_size = 0;
-    i2c_port_.transfer(&receive_size, &transmit_size);
+    i2c_port_.transfer(receive_size, transmit_size);
     if(request.Decode(i2c_port_.receive_buffer(), receive_size) == FD_RCODE_SUCCESS) {
         if(ProcessRequest(request, response)) {
             transmit_size = response.Encode(i2c_port_.transmit_buffer(), i2c_port_.transmit_buffer_size());

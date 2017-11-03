@@ -68,11 +68,13 @@ uint32_t I2CPort::transmit_buffer_size() {
   * @param  txSize
   * @retval None
   */
-void I2CPort::transfer(uint32_t * const receive_size, uint32_t * const transmit_size) {
+void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
     static uint32_t rx_count;
     static uint32_t tx_count;
     static uint32_t dummy;
     static uint32_t dir_count = 0;
+    static uint32_t arlo_cnt = 0;
+    static bool release_clock_stretch_flag;
 
     if( LL_I2C_IsActiveFlag_OVR(port_)
             or LL_I2C_IsActiveFlag_BERR(port_)
@@ -82,38 +84,41 @@ void I2CPort::transfer(uint32_t * const receive_size, uint32_t * const transmit_
 
     if(LL_I2C_IsActiveFlag_ARLO(port_)) {
         LL_I2C_ClearFlag_ARLO(port_);
+        arlo_cnt++;
+        state_ = ST_INIT;
     }
 
     switch(state_) {
 
     case ST_INIT:
         rx_count = 0;
-        *receive_size = 0;
+        receive_size = 0;
         tx_count = 0;
         // clear all flags by disabling I2C port
         LL_I2C_Disable(port_);
         LL_I2C_Enable(port_);
+        release_clock_stretch_flag = false;
         state_ = ST_WAIT_ADR;
         break;
 
     case ST_WAIT_ADR:
         if(LL_I2C_IsActiveFlag_ADDR(port_)) {
-            LL_I2C_ClearFlag_ADDR(port_);
-            LL_I2C_ClearFlag_TXE(port_); // purge tx reg
             if(LL_I2C_GetTransferDirection(port_) == LL_I2C_DIRECTION_WRITE) {
+                LL_I2C_ClearFlag_ADDR(port_);
                 dir_count++;
                 rx_count = 0;
-                *receive_size = 0;
-                state_ = ST_WAIT_RX_STOP;
+                receive_size = 0;
+                state_ = ST_WAIT_MASTER_WRITE_STOP;
             }
             else {
+                // Clock is stretched until ADDR flag is cleared
                 tx_count = 0;
-                state_ = ST_WAIT_TX_STOP;
+                state_ = ST_WAIT_PROCESSING;
             }
         }
         break;
 
-    case ST_WAIT_RX_STOP:
+    case ST_WAIT_MASTER_WRITE_STOP:
         if(LL_I2C_IsActiveFlag_RXNE(port_)) {
             if(rx_count < BUFFER_SIZE) {
                 rx_buffer_[rx_count++] = port_->RXDR;
@@ -127,34 +132,49 @@ void I2CPort::transfer(uint32_t * const receive_size, uint32_t * const transmit_
         }
         else if(LL_I2C_IsActiveFlag_STOP(port_)) {
             LL_I2C_ClearFlag_STOP(port_);
-            *receive_size = rx_count;
-            state_ = ST_WAIT_RX_PROCESSING;
+            receive_size = rx_count;
+            state_ = ST_WAIT_ADR;;
         }
         break;
 
-    case ST_WAIT_RX_PROCESSING:
+    case ST_WAIT_PROCESSING:
+        // Clock is stretched until ADDR flag is cleared
         // Clock will be stretched until received data is processed
-        if(*receive_size == 0) {
-            state_ = ST_WAIT_ADR;
+        if(receive_size == 0) {     // Wait until received data is processed
+            state_ = ST_WAIT_MASTER_READ_STOP;
+            release_clock_stretch_flag = true;
         }
         break;
 
-    case ST_WAIT_TX_STOP:
+    case ST_WAIT_MASTER_READ_STOP:
         if(LL_I2C_IsActiveFlag_TXE(port_)) {
-            if(tx_count < *transmit_size) {
+            if(tx_count < transmit_size) {
                 port_->TXDR = tx_buffer_[tx_count++];
+                if(release_clock_stretch_flag) {
+                    release_clock_stretch_flag = false;
+                    LL_I2C_ClearFlag_ADDR(port_);
+                }
+                if(tx_count == transmit_size) {
+                    transmit_size = 0;
+                    tx_count = 0;
+                }
             }
             else {
-                *transmit_size = 0;
-                port_->TXDR = dummy;
+                // load dummy value, it's OK to enter once after full master read
+                port_->TXDR = 0xEE; // master over-read error code
+                if(release_clock_stretch_flag) {
+                    release_clock_stretch_flag = false;
+                    LL_I2C_ClearFlag_ADDR(port_);
+                }
             }
         }
         else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
+            LL_I2C_ClearFlag_TXE(port_); // purge tx reg
             state_ = ST_WAIT_ADR;
         }
         else if(LL_I2C_IsActiveFlag_STOP(port_)) {
+            LL_I2C_ClearFlag_TXE(port_); // purge tx reg
             LL_I2C_ClearFlag_STOP(port_);
-            *transmit_size = 0;
             state_ = ST_WAIT_ADR;
         }
         break;
