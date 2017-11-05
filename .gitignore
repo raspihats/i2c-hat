@@ -1,2 +1,7 @@
 # Launch file
 *.launch
+
+*.cproject
+*.mxproject
+*.project
+/.settings
