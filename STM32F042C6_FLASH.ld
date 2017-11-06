@@ -4,7 +4,7 @@
 
 **  File        : stm32_flash.ld
 **
-**  Abstract    : Linker script for STM32F042K6 Device with
+**  Abstract    : Linker script for STM32F042C6 Device with
 **                32KByte FLASH, 6KByte RAM
 **
 **                Set heap size, stack size and stack location according

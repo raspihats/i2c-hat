@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
+  * File Name          : main.hpp
   * Description        : This file contains the common defines of the application
   ******************************************************************************
   ** This notice applies to any and all portions of this file
@@ -53,6 +53,7 @@
 #include "stm32f0xx_ll_dma.h"
 #include "stm32f0xx_ll_gpio.h"
 
+/* Includes ------------------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -67,22 +68,40 @@
 #define ADR1_GPIO_Port GPIOA
 #define ADR0_Pin LL_GPIO_PIN_3
 #define ADR0_GPIO_Port GPIOA
-#define RLY0_Pin LL_GPIO_PIN_8
-#define RLY0_GPIO_Port GPIOA
-#define RLY1_Pin LL_GPIO_PIN_9
-#define RLY1_GPIO_Port GPIOA
-#define RLY2_Pin LL_GPIO_PIN_10
-#define RLY2_GPIO_Port GPIOA
-#define RLY3_Pin LL_GPIO_PIN_11
-#define RLY3_GPIO_Port GPIOA
-#define RLY4_Pin LL_GPIO_PIN_12
-#define RLY4_GPIO_Port GPIOA
-#define RLY5_Pin LL_GPIO_PIN_15
-#define RLY5_GPIO_Port GPIOA
-#define RLY6_Pin LL_GPIO_PIN_3
-#define RLY6_GPIO_Port GPIOB
-#define RLY7_Pin LL_GPIO_PIN_4
-#define RLY7_GPIO_Port GPIOB
+#define DI0_Pin LL_GPIO_PIN_4
+#define DI0_GPIO_Port GPIOA
+#define DI1_Pin LL_GPIO_PIN_5
+#define DI1_GPIO_Port GPIOA
+#define DI2_Pin LL_GPIO_PIN_6
+#define DI2_GPIO_Port GPIOA
+#define DI3_Pin LL_GPIO_PIN_7
+#define DI3_GPIO_Port GPIOA
+#define DI4_Pin LL_GPIO_PIN_0
+#define DI4_GPIO_Port GPIOB
+#define DI5_Pin LL_GPIO_PIN_1
+#define DI5_GPIO_Port GPIOB
+#define DI6_Pin LL_GPIO_PIN_2
+#define DI6_GPIO_Port GPIOB
+#define DI7_Pin LL_GPIO_PIN_10
+#define DI7_GPIO_Port GPIOB
+#define DI8_Pin LL_GPIO_PIN_12
+#define DI8_GPIO_Port GPIOB
+#define DI9_Pin LL_GPIO_PIN_13
+#define DI9_GPIO_Port GPIOB
+#define DI10_Pin LL_GPIO_PIN_14
+#define DI10_GPIO_Port GPIOB
+#define DI11_Pin LL_GPIO_PIN_15
+#define DI11_GPIO_Port GPIOB
+#define DI12_Pin LL_GPIO_PIN_8
+#define DI12_GPIO_Port GPIOA
+#define DI13_Pin LL_GPIO_PIN_9
+#define DI13_GPIO_Port GPIOA
+#define DI14_Pin LL_GPIO_PIN_10
+#define DI14_GPIO_Port GPIOA
+#define DI15_Pin LL_GPIO_PIN_11
+#define DI15_GPIO_Port GPIOA
+#define IRQ_Pin LL_GPIO_PIN_4
+#define IRQ_GPIO_Port GPIOB
 #define STATUS_LED_Pin LL_GPIO_PIN_5
 #define STATUS_LED_GPIO_Port GPIOB
 #ifndef NVIC_PRIORITYGROUP_0
@@ -103,15 +122,21 @@
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
-/* #define USE_FULL_ASSERT    1 */
+/* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
 void _Error_Handler(char *, int);
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+#ifdef __cplusplus
+}
+#endif
 
 /**
   * @}
