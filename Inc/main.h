@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
+  * File Name          : main.hpp
   * Description        : This file contains the common defines of the application
   ******************************************************************************
   ** This notice applies to any and all portions of this file
@@ -51,8 +51,10 @@
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_pwr.h"
 #include "stm32f0xx_ll_dma.h"
+#include "stm32f0xx_ll_tim.h"
 #include "stm32f0xx_ll_gpio.h"
 
+/* Includes ------------------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -67,26 +69,6 @@
 #define ADR1_GPIO_Port GPIOA
 #define ADR0_Pin LL_GPIO_PIN_3
 #define ADR0_GPIO_Port GPIOA
-#define RLY0_Pin LL_GPIO_PIN_5
-#define RLY0_GPIO_Port GPIOA
-#define RLY1_Pin LL_GPIO_PIN_6
-#define RLY1_GPIO_Port GPIOA
-#define RLY2_Pin LL_GPIO_PIN_7
-#define RLY2_GPIO_Port GPIOA
-#define RLY3_Pin LL_GPIO_PIN_0
-#define RLY3_GPIO_Port GPIOB
-#define RLY4_Pin LL_GPIO_PIN_1
-#define RLY4_GPIO_Port GPIOB
-#define RLY5_Pin LL_GPIO_PIN_8
-#define RLY5_GPIO_Port GPIOA
-#define RLY6_Pin LL_GPIO_PIN_9
-#define RLY6_GPIO_Port GPIOA
-#define RLY7_Pin LL_GPIO_PIN_10
-#define RLY7_GPIO_Port GPIOA
-#define RLY8_Pin LL_GPIO_PIN_11
-#define RLY8_GPIO_Port GPIOA
-#define RLY9_Pin LL_GPIO_PIN_12
-#define RLY9_GPIO_Port GPIOA
 #define STATUS_LED_Pin LL_GPIO_PIN_5
 #define STATUS_LED_GPIO_Port GPIOB
 #ifndef NVIC_PRIORITYGROUP_0
@@ -107,15 +89,21 @@
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
-/* #define USE_FULL_ASSERT    1 */
+/* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
 void _Error_Handler(char *, int);
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+#ifdef __cplusplus
+}
+#endif
 
 /**
   * @}
