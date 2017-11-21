@@ -14,6 +14,8 @@
 #define DEFAULT_POWER_ON_VALUE          (0)
 #define DEFAULT_SAFETY_VALUE            (0)
 
+#define RELAY_PULL_MS                   (500)
+
 namespace i2c_hat {
 namespace module {
 
@@ -28,6 +30,11 @@ DigitalOutputs::DigitalOutputs() :
         channels_{DIGITAL_OUTPUT_CHANNELS},
         power_on_value_(DEFAULT_POWER_ON_VALUE),
         safety_value_(DEFAULT_SAFETY_VALUE) {
+            uint32_t i;
+
+            for(i = 0; i < kChannelCount; i++) {
+                channels_[i].set_pull(RELAY_PULL_MS / TASK_PERIOD_MS);
+            }
 }
 
 /**
@@ -157,7 +164,7 @@ uint32_t DigitalOutputs::GetValue() {
 
     value = 0;
     for(i = 0; i < kChannelCount; i++) {
-        value |= channels_[i].GetState() ? 0x01 << i : 0x00 ;
+        value |= channels_[i].GetState() ? 0x01 << i : 0x00;
     }
     return value;
 }
@@ -191,7 +198,11 @@ void DigitalOutputs::Init() {
   */
 
 void DigitalOutputs::Run() {
+    uint32_t i;
 
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].Tick();
+    }
 }
 
 /**
