@@ -51,6 +51,7 @@
 #include "stm32f0xx_ll_utils.h"
 #include "stm32f0xx_ll_pwr.h"
 #include "stm32f0xx_ll_dma.h"
+#include "stm32f0xx_ll_tim.h"
 #include "stm32f0xx_ll_gpio.h"
 
 /* USER CODE BEGIN Includes */
@@ -87,10 +88,10 @@
 #define RLY2_GPIO_Port GPIOA
 #define RLY3_Pin LL_GPIO_PIN_11
 #define RLY3_GPIO_Port GPIOA
-#define RLY4_Pin LL_GPIO_PIN_12
+#define RLY4_Pin LL_GPIO_PIN_15
 #define RLY4_GPIO_Port GPIOA
-#define RLY5_Pin LL_GPIO_PIN_15
-#define RLY5_GPIO_Port GPIOA
+#define RLY5_Pin LL_GPIO_PIN_3
+#define RLY5_GPIO_Port GPIOB
 #define IRQ_Pin LL_GPIO_PIN_4
 #define IRQ_GPIO_Port GPIOB
 #define STATUS_LED_Pin LL_GPIO_PIN_5

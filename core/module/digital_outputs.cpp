@@ -14,6 +14,8 @@
 #define DEFAULT_POWER_ON_VALUE          (0)
 #define DEFAULT_SAFETY_VALUE            (0)
 
+#define RELAY_PULL_MS                   (50)
+
 namespace i2c_hat {
 namespace module {
 
@@ -28,6 +30,11 @@ DigitalOutputs::DigitalOutputs() :
         channels_{DIGITAL_OUTPUT_CHANNELS},
         power_on_value_(DEFAULT_POWER_ON_VALUE),
         safety_value_(DEFAULT_SAFETY_VALUE) {
+            uint32_t i;
+
+            for(i = 0; i < kChannelCount; i++) {
+                channels_[i].set_pull(RELAY_PULL_MS / TASK_PERIOD_MS);
+            }
 }
 
 /**
@@ -53,7 +60,6 @@ void DigitalOutputs::LoadPowerOnValue() {
   * @param  powerOnValue: the PowerOn Value
   * @retval None
   */
-
 bool DigitalOutputs::SetPowerOnValue(const uint32_t value) {
     if(IsValid(value)) {
         if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, value)) {
@@ -72,7 +78,6 @@ bool DigitalOutputs::SetPowerOnValue(const uint32_t value) {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::LoadSafetyValue() {
     SetValue(safety_value_);
 }
@@ -82,7 +87,6 @@ void DigitalOutputs::LoadSafetyValue() {
   * @param  safetyValue: the Safety Value
   * @retval None
   */
-
 bool DigitalOutputs::SetSafetyValue(const uint32_t value) {
     if(IsValid(value)) {
         if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_SAFETY_VALUE, value)) {
@@ -101,7 +105,6 @@ bool DigitalOutputs::SetSafetyValue(const uint32_t value) {
   * @param  states:
   * @retval None
   */
-
 bool DigitalOutputs::SetValue(const uint32_t value) {
     uint32_t i, mask;
 
@@ -121,7 +124,6 @@ bool DigitalOutputs::SetValue(const uint32_t value) {
   * @param  state: channel state
   * @retval error code
   */
-
 bool DigitalOutputs::SetChannelState(const uint8_t index, const bool state) {
 
     if(index < kChannelCount) {
@@ -137,7 +139,6 @@ bool DigitalOutputs::SetChannelState(const uint8_t index, const bool state) {
   * @param  state: reference to store state
   * @retval error code
   */
-
 bool DigitalOutputs::GetChannelState(const uint8_t index, bool& state) {
     if(index < kChannelCount) {
         state = channels_[index].GetState();
@@ -151,7 +152,6 @@ bool DigitalOutputs::GetChannelState(const uint8_t index, bool& state) {
   * @param  None
   * @retval all channel states
   */
-
 uint32_t DigitalOutputs::GetValue() {
     uint32_t i, value;
 
@@ -167,7 +167,6 @@ uint32_t DigitalOutputs::GetValue() {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::Init() {
     bool success;
 
@@ -189,9 +188,12 @@ void DigitalOutputs::Init() {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::Run() {
+    uint32_t i;
 
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].Tick();
+    }
 }
 
 /**
@@ -199,7 +201,6 @@ void DigitalOutputs::Run() {
   * @param  event: event code
   * @retval None
   */
-
 void DigitalOutputs::ReceiveEvent(const uint32_t event) {
     if(event == EVENT_CWDT_TIMEOUT) {
         LoadSafetyValue();
@@ -213,7 +214,6 @@ void DigitalOutputs::ReceiveEvent(const uint32_t event) {
   * @retval 1 if response
   *         0 if no response
   */
-
 bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
     static uint32_t temp;
     uint8_t index;
