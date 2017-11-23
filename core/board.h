@@ -11,14 +11,14 @@
 #include "main.h"
 
 #define FW_VERSION_SIZE                     (3)
-#define FW_VERSION_MAJOR                    (1)
-#define FW_VERSION_MINOR                    (3)
+#define FW_VERSION_MAJOR                    (2)
+#define FW_VERSION_MINOR                    (0)
 #define FW_VERSION_PATCH                    (0)
 
 #define BOARD_NAME_SIZE                     (25)
 #define BOARD_NAME                          "DI6acDQ6rly I2C-HAT"
 
-#define I2C_BASE_ADDRESS                        (0x60)
+#define I2C_BASE_ADDRESS                    (0x60)
 
 #define STATUS_LED_PIN                      driver::DigitalOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, true)
 
