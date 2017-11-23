@@ -9,7 +9,7 @@
 #define MODULE_DIGITAL_OUTPUTS_H_
 
 #include "module.h"
-#include "digital_output_channel.h"
+#include "relay_output_channel.h"
 #include "../driver/eeprom.h"
 
 #ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
@@ -23,7 +23,7 @@ public:
     bool ProcessRequest(Frame& request, Frame& response);
 private:
     const uint32_t kChannelCount;
-    DigitalOutputChannel channels_[DIGITAL_OUTPUT_CHANNEL_COUNT];
+    RelayOutputChannel channels_[DIGITAL_OUTPUT_CHANNEL_COUNT];
     uint32_t power_on_value_;
     uint32_t safety_value_;
 
