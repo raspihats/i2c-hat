@@ -14,7 +14,7 @@
 #define DEFAULT_POWER_ON_VALUE          (0)
 #define DEFAULT_SAFETY_VALUE            (0)
 
-#define RELAY_PULL_MS                   (500)
+#define RELAY_PULL_MS                   (100)
 
 namespace i2c_hat {
 namespace module {

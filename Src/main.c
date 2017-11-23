@@ -108,8 +108,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LL_TIM_EnableCounter(TIM1);
   LL_TIM_EnableAllOutputs(TIM1);    // MOE bit, only for Timer1
-  LL_TIM_EnableCounter(TIM3);
   LL_TIM_EnableCounter(TIM2);
+  LL_TIM_EnableCounter(TIM3);
 
   address = I2C_BASE_ADDRESS;
   address += LL_GPIO_IsInputPinSet(GPIOA, ADR0_Pin) ? 0x00 : 0x01;
