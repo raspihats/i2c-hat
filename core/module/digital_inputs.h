@@ -12,8 +12,6 @@
 #include "digital_input_channel.h"
 #include "../driver/digital_output_pin.h"
 
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-
 namespace i2c_hat {
 namespace module {
 
@@ -49,7 +47,5 @@ private:
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif
 
 #endif /* MODULE_DIGITAL_INPUTS_H_ */

@@ -7,8 +7,6 @@
 
 #include "digital_inputs.h"
 
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-
 #define TASK_DELAY_MS                   (0)
 #define TASK_PERIOD_MS                  (1)
 
@@ -436,5 +434,3 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif

@@ -6,8 +6,6 @@
  */
 #include "digital_outputs.h"
 
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
-
 #define TASK_DELAY_MS                   (0)
 #define TASK_PERIOD_MS                  (10)
 
@@ -302,5 +300,3 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif
