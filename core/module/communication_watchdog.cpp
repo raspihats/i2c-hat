@@ -154,8 +154,8 @@ bool CommunicationWatchdog::ProcessRequest(Frame& request, Frame& response) {
 
     feed();
 
-    switch(request.command()) {
-    case CMD_CWDT_SET_PERIOD:
+    switch((Command)request.command()) {
+    case Command::CWDT_SET_PERIOD:
         if(request.payload_size() == 4) {
             uint32_t tempU32;
             const uint8_t* data = request.payload();
@@ -166,7 +166,7 @@ bool CommunicationWatchdog::ProcessRequest(Frame& request, Frame& response) {
             response_flag = true;
           }
         break;
-    case CMD_CWDT_GET_PERIOD:
+    case Command::CWDT_GET_PERIOD:
         if(request.payload_size() == 0) {
             response.set_payload((uint8_t*)&period_, 4);
             response_flag = true;

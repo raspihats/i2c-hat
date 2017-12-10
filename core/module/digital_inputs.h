@@ -12,16 +12,8 @@
 #include "digital_input_channel.h"
 #include "../driver/digital_output_pin.h"
 
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-
 namespace i2c_hat {
 namespace module {
-
-typedef enum {
-    DIGITAL_INPUT_COUNTER_TYPE_FALLING_EDGE,
-    DIGITAL_INPUT_COUNTER_TYPE_RISING_EDGE,
-    DIGITAL_INPUT_COUNTER_TYPES_COUNT
-} di_counter_type_t;
 
 class DigitalInputs: public Module {
 public:
@@ -31,20 +23,29 @@ public:
     void ReceiveEvent(const uint32_t event);
     bool ProcessRequest(Frame& request, Frame& response);
 private:
+    enum class CounterTypes {
+        FALLING_EDGE,
+        RISING_EDGE,
+    };
+
     const uint32_t kChannelCount;
     DigitalInputChannel channels_[DIGITAL_INPUT_CHANNEL_COUNT];
     driver::DigitalOutputPin irq_;
+    uint32_t irq_status_;
+    uint32_t irq_capture_;
 
+    bool IsValid(const uint32_t value);
+    void ClearIRQ();
     bool GetChannelState(const uint32_t index, bool& state);
     uint32_t GetValue();
-    bool GetCounter(const uint32_t index, const di_counter_type_t type, uint32_t& value);
-    bool ResetCounter(const uint32_t channel, const di_counter_type_t type);
+    bool GetCounter(const uint32_t index, const CounterTypes type, uint32_t& value);
+    bool ResetCounter(const uint32_t channel, const CounterTypes type);
     void ResetCounters();
+    uint32_t GetIRQReg(const IRQReg reg);
+    bool SetIRQReg(const IRQReg reg, const uint32_t value);
 };
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif
 
 #endif /* MODULE_DIGITAL_INPUTS_H_ */
