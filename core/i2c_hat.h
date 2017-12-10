@@ -33,14 +33,8 @@ private:
     /******** MODULES *******/
     module::CommunicationWatchdog communication_watchdog_;
     module::StatusLed status_led_;
-
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-    module::DigitalInputs digital_inputs_;
-#endif
-
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
-    module::DigitalOutputs digital_outputs_;
-#endif
+//    module::DigitalInputs digital_inputs_;
+//    module::DigitalOutputs digital_outputs_;
 
     uint8_t* GetStatusWord();
     bool Register(module::Module& module);
