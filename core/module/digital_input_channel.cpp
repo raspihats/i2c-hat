@@ -55,7 +55,7 @@ bool DigitalInputChannel::irq_flag() {
     return irq_flag_;
 }
 
-bool DigitalInputChannel::reset_irq_flag() {
+void DigitalInputChannel::reset_irq_flag() {
     irq_flag_ = false;
 }
 

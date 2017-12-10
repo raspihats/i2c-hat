@@ -101,11 +101,11 @@ uint32_t DigitalInputs::GetValue() {
   */
 bool DigitalInputs::GetCounter(const uint32_t channel, const CounterTypes type, uint32_t& value) {
     if(channel < kChannelCount) {
-        if(type == CT_FALLING_EDGE) {
+        if(type == CounterTypes::FALLING_EDGE) {
             value = channels_[channel].falling_edge_counter();
             return true;
         }
-        if(type == CT_RISING_EDGE) {
+        if(type == CounterTypes::RISING_EDGE) {
             value = channels_[channel].rising_edge_counter();
             return true;
         }
@@ -121,11 +121,11 @@ bool DigitalInputs::GetCounter(const uint32_t channel, const CounterTypes type, 
   */
 bool DigitalInputs::ResetCounter(const uint32_t index, const CounterTypes type) {
     if(index < kChannelCount) {
-        if(type == CT_RISING_EDGE) {
+        if(type == CounterTypes::RISING_EDGE) {
             channels_[index].ResetRisingEdgeCounter();
             return true;
         }
-        if(type == CT_FALLING_EDGE) {
+        if(type == CounterTypes::FALLING_EDGE) {
             channels_[index].ResetFallingEdgeCounter();
             return true;
         }

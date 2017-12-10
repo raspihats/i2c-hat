@@ -25,9 +25,9 @@ public:
     void ReceiveEvent(const uint32_t event);
     bool ProcessRequest(Frame& request, Frame& response);
 private:
-    enum CounterTypes {
-        CT_FALLING_EDGE,
-        CT_RISING_EDGE,
+    enum class CounterTypes {
+        FALLING_EDGE,
+        RISING_EDGE,
     };
 
     const uint32_t kChannelCount;

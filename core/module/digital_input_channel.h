@@ -24,7 +24,7 @@ public:
     bool falling_edge_irq_enable_flag();
     void set_falling_edge_irq_enable_flag(const bool value);
     bool irq_flag();
-    bool reset_irq_flag();
+    void reset_irq_flag();
     uint32_t rising_edge_counter();
     uint32_t falling_edge_counter();
     void ResetRisingEdgeCounter();
