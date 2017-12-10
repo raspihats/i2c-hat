@@ -98,26 +98,26 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
     }
 
     if(not response_flag) {
-        switch(request.command()) {
-        case CMD_GET_BOARD_NAME:
+        switch((Command)request.command()) {
+        case Command::GET_BOARD_NAME:
             if(request.payload_size() == 0) {
                 response.set_payload(kBoardName, sizeof(kBoardName));
                 response_flag = true;
             }
             break;
-        case CMD_GET_FIRMWARE_VERSION:
+        case Command::GET_FIRMWARE_VERSION:
             if(request.payload_size() == 0) {
                 response.set_payload(kFirmwareVersion, sizeof(kFirmwareVersion));
                 response_flag = true;
             }
             break;
-        case CMD_GET_STATUS_WORD:
+        case Command::GET_STATUS_WORD:
             if(request.payload_size() == 0) {
                 response.set_payload(GetStatusWord(), 4);
                 response_flag = true;
             }
             break;
-        case CMD_RESET:
+        case Command::RESET:
             if(request.payload_size() == 0) {
                 NVIC_SystemReset();
             }

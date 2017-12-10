@@ -26,12 +26,38 @@ DigitalInputs::DigitalInputs() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS),
         kChannelCount(DIGITAL_INPUT_CHANNEL_COUNT),
         channels_{DIGITAL_INPUT_CHANNELS},
-        irq_(IRQ_PIN) {
+        irq_(IRQ_PIN),
+        irq_status_(0),
+        irq_capture_(0) {
     uint32_t i;
 
     for(i = 0; i < kChannelCount; i++) {
         channels_[i].set_debounce(DEBOUNCE_TIME_MS / TASK_PERIOD_MS);
     }
+}
+
+/**
+  * @brief  Checks if value is valid to be written to register
+  * @param  value: value to be checked
+  * @retval value validation status
+  */
+bool DigitalInputs::IsValid(const uint32_t value) {
+    return value < ((uint32_t)0x01 << kChannelCount);
+}
+
+/**
+  * @brief  Clears IRQ condition
+  * @param  None
+  * @retval None
+  */
+void DigitalInputs::ClearIRQ() {
+    uint32_t i;
+
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].reset_irq_flag();
+    }
+
+    irq_.SetState(false);
 }
 
 /**
@@ -63,8 +89,6 @@ uint32_t DigitalInputs::GetValue() {
         value |= (uint32_t)channels_[i].state() << i;
     }
 
-	irq_.SetState(false);
-
     return value;
 }
 
@@ -75,13 +99,13 @@ uint32_t DigitalInputs::GetValue() {
   * @param  pointer where to store counter value
   * @retval
   */
-bool DigitalInputs::GetCounter(const uint32_t channel, const di_counter_type_t type, uint32_t& value) {
+bool DigitalInputs::GetCounter(const uint32_t channel, const CounterTypes type, uint32_t& value) {
     if(channel < kChannelCount) {
-        if(type == DIGITAL_INPUT_COUNTER_TYPE_FALLING_EDGE) {
+        if(type == CT_FALLING_EDGE) {
             value = channels_[channel].falling_edge_counter();
             return true;
         }
-        if(type == DIGITAL_INPUT_COUNTER_TYPE_RISING_EDGE) {
+        if(type == CT_RISING_EDGE) {
             value = channels_[channel].rising_edge_counter();
             return true;
         }
@@ -95,13 +119,13 @@ bool DigitalInputs::GetCounter(const uint32_t channel, const di_counter_type_t t
   * @param  type: counter type
   * @retval
   */
-bool DigitalInputs::ResetCounter(const uint32_t index, const di_counter_type_t type) {
+bool DigitalInputs::ResetCounter(const uint32_t index, const CounterTypes type) {
     if(index < kChannelCount) {
-        if(type == DIGITAL_INPUT_COUNTER_TYPE_RISING_EDGE) {
+        if(type == CT_RISING_EDGE) {
             channels_[index].ResetRisingEdgeCounter();
             return true;
         }
-        if(type == DIGITAL_INPUT_COUNTER_TYPE_FALLING_EDGE) {
+        if(type == CT_FALLING_EDGE) {
             channels_[index].ResetFallingEdgeCounter();
             return true;
         }
@@ -123,6 +147,80 @@ void DigitalInputs::ResetCounters() {
 }
 
 /**
+  * @brief  Gets IRQ register
+  * @param  reg - Register
+  * @retval Register value
+  */
+uint32_t DigitalInputs::GetIRQReg(const IRQReg reg) {
+    uint32_t value;
+    uint32_t i;
+    bool flag;
+
+    switch(reg) {
+    case IRQReg::DI_RISING_EDGE_CONTROL:
+        value = 0;
+        for(i = 0; i < kChannelCount; i++) {
+            flag = channels_[i].rising_edge_irq_enable_flag();
+            if(flag) {
+                value |= 0x01 << i;
+            }
+        }
+        break;
+    case IRQReg::DI_FALLING_EDGE_CONTROL:
+        value = 0;
+        for(i = 0; i < kChannelCount; i++) {
+            flag = channels_[i].falling_edge_irq_enable_flag();
+            if(flag) {
+                value |= 0x01 << i;
+            }
+        }
+        break;
+    case IRQReg::DI_STATUS:
+        value = irq_status_;
+        break;
+    case IRQReg::DI_CAPTURE:
+        value = irq_capture_;
+        break;
+    default:
+        value = 0;
+        break;
+    }
+
+    return value;
+}
+
+/**
+  * @brief  Sets IRQ register
+  * @param  reg - Register
+  * @retval None
+  */
+bool DigitalInputs::SetIRQReg(const IRQReg reg, const uint32_t value) {
+    uint32_t i;
+    bool result;
+
+    result = false;
+    if(IsValid(value)) {
+        switch(reg) {
+        case IRQReg::DI_RISING_EDGE_CONTROL:
+            for(i = 0; i < kChannelCount; i++) {
+                channels_[i].set_rising_edge_irq_enable_flag((value >> i) & 0x01);
+            }
+            result = true;
+            break;
+        case IRQReg::DI_FALLING_EDGE_CONTROL:
+            for(i = 0; i < kChannelCount; i++) {
+                channels_[i].set_falling_edge_irq_enable_flag((value >> i) & 0x01);
+            }
+            result = true;
+            break;
+        default:
+            result = false;
+        }
+    }
+    return result;
+}
+
+/**
   * @brief  Module Init implementation
   * @param  None
   * @retval None
@@ -138,21 +236,23 @@ void DigitalInputs::Init() {
   * @retval None
   */
 void DigitalInputs::Run() {
-    static uint32_t value_old = GetValue();
-    uint32_t value;
+    static uint32_t irq_status_old = 0;
     uint32_t i;
 
+    // update IRQ Status reg
+    irq_status_ = 0;
     for(i = 0; i < kChannelCount; i++) {
         channels_[i].Tick();
+        irq_status_ |= channels_[i].irq_flag() << i;
     }
 
-    value = GetValue();
-
-    // Generate IRQ
-    if(value != value_old) {
+    // generate IRQ
+    if((irq_status_ > 0) && (irq_status_ != irq_status_old) ) {
+        irq_capture_ = GetValue();
         irq_.SetState(true);
     }
-    value_old = value;
+
+    irq_status_old = irq_status_;
 
 //    // Encoders CW and CCW counters
 //    if(channel & 0x01) { // enter here every second encoder input channel, even input channel numbers
@@ -195,12 +295,14 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
     uint32_t response_flag = false;
     static uint8_t buffer[10];
     bool state;
+    uint8_t *data;
     uint8_t index;
-    uint8_t counter_type;
+    uint8_t u8_temp;
     uint32_t u32_temp;
+    IRQReg irq_reg;
 
-    switch(request.command()) {
-    case CMD_DI_GET_VALUE:
+    switch((Command)request.command()) {
+    case Command::DI_GET_VALUE:
         if(request.payload_size() == 0) {
             u32_temp = GetValue();
             buffer[0] = (uint8_t)u32_temp;
@@ -208,10 +310,11 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             buffer[2] = (uint8_t)(u32_temp >> 16);
             buffer[3] = (uint8_t)(u32_temp >> 24);
             response.set_payload(buffer, 4);
+            ClearIRQ();
             response_flag = true;
         }
         break;
-    case CMD_DI_GET_CHANNEL_STATE:
+    case Command::DI_GET_CHANNEL_STATE:
         if(request.payload_size() == 1) {
             index = request.payload()[0];
             if(GetChannelState(index, state)) {
@@ -222,13 +325,13 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DI_GET_COUNTER:
+    case Command::DI_GET_COUNTER:
         if(request.payload_size() == 2) {
             index = request.payload()[0];
-            counter_type = request.payload()[1];
-            if(GetCounter(index, (di_counter_type_t)counter_type, u32_temp)) {
+            u8_temp = request.payload()[1];
+            if(GetCounter(index, (CounterTypes)u8_temp, u32_temp)) {
                 buffer[0] = index;
-                buffer[1] = counter_type;
+                buffer[1] = u8_temp;
                 buffer[2] = (uint8_t)u32_temp;
                 buffer[3] = (uint8_t)(u32_temp >> 8);
                 buffer[4] = (uint8_t)(u32_temp >> 16);
@@ -238,30 +341,30 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DI_RESET_COUNTER:
+    case Command::DI_RESET_COUNTER:
         if(request.payload_size() == 2) {
             index = request.payload()[0];
-            counter_type = request.payload()[1];
-            if(ResetCounter(index, (di_counter_type_t)counter_type)) {
+            u8_temp = request.payload()[1];
+            if(ResetCounter(index, (CounterTypes)u8_temp)) {
                 buffer[0] = index;
-                buffer[1] = counter_type;
+                buffer[1] = u8_temp;
                 response.set_payload(buffer, 2);
                 response_flag = true;
             }
         }
         break;
-    case CMD_DI_RESET_ALL_COUNTERS:
+    case Command::DI_RESET_ALL_COUNTERS:
         if(request.payload_size() == 0) {
             ResetCounters();
             response.set_payload(NULL, 0);
             response_flag = true;
         }
         break;
-    case CMD_DI_GET_COUNTERS_STATUS:
+    case Command::DI_GET_COUNTERS_STATUS:
         // TODO implement
         response_flag = false;
         break;
-    case CMD_DI_GET_ENCODER:
+    case Command::DI_GET_ENCODER:
         if(request.payload_size() == 1) {
             index = request.payload()[0];
 //            if(GetEncoder(channel, &tempU32)) {
@@ -271,17 +374,59 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
 //            }
         }
         break;
-    case CMD_DI_RESET_ENCODER:
+    case Command::DI_RESET_ENCODER:
         // TODO implement
         response_flag = false;
         break;
-    case CMD_DI_RESET_ALL_ENCODERS:
+    case Command::DI_RESET_ALL_ENCODERS:
         // TODO implement
         response_flag = false;
         break;
-    case CMD_DI_GET_ENCODERS_STATUS:
+    case Command::DI_GET_ENCODERS_STATUS:
         // TODO implement
         response_flag = false;
+        break;
+    // TODO move IRQ GET/SET to separate module
+    case Command::IRQ_GET_REG:
+        if(request.payload_size() == 1) {
+            irq_reg = (IRQReg)request.payload()[0];
+            if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
+                    (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) or
+                    (irq_reg == IRQReg::DI_STATUS) or
+                    (irq_reg == IRQReg::DI_CAPTURE) ) {
+                u32_temp = GetIRQReg(irq_reg);
+                buffer[0] = static_cast<int>(irq_reg);
+                buffer[1] = (uint8_t)u32_temp;
+                buffer[2] = (uint8_t)(u32_temp >> 8);
+                buffer[3] = (uint8_t)(u32_temp >> 16);
+                buffer[4] = (uint8_t)(u32_temp >> 24);
+                response.set_payload(buffer, 5);
+                if(irq_reg == IRQReg::DI_CAPTURE) {
+                    ClearIRQ();
+                }
+                response_flag = true;
+            }
+        }
+        break;
+    case Command::IRQ_SET_REG:
+        if(request.payload_size() == 5) {
+            data = (uint8_t*)request.payload();
+            irq_reg = (IRQReg)data[0];
+            BYTES_TO_UINT32(data + 1, u32_temp);
+            if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
+                    (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) ) {
+                if(SetIRQReg(irq_reg, u32_temp)) {
+                    u32_temp = GetIRQReg(irq_reg);
+                    buffer[0] = static_cast<int>(irq_reg);
+                    buffer[1] = (uint8_t)u32_temp;
+                    buffer[2] = (uint8_t)(u32_temp >> 8);
+                    buffer[3] = (uint8_t)(u32_temp >> 16);
+                    buffer[4] = (uint8_t)(u32_temp >> 24);
+                    response.set_payload(buffer, 5);
+                    response_flag = true;
+                }
+            }
+        }
         break;
     default:
         response_flag = false;

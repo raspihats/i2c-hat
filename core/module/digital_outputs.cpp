@@ -221,8 +221,8 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
     bool response_flag;
 
     response_flag = false;
-    switch(request.command()) {
-    case CMD_DO_SET_POWER_ON_VALUE:
+    switch((Command)request.command()) {
+    case Command::DO_SET_POWER_ON_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetPowerOnValue(temp)) {
@@ -231,13 +231,13 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_POWER_ON_VALUE:
+    case Command::DO_GET_POWER_ON_VALUE:
         if(request.payload_size() == 0) {
             response.set_payload((uint8_t*)&power_on_value_, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_SAFETY_VALUE:
+    case Command::DO_SET_SAFETY_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetSafetyValue(temp)) {
@@ -246,13 +246,13 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_SAFETY_VALUE:
+    case Command::DO_GET_SAFETY_VALUE:
         if(request.payload_size() == 0) {
             response.set_payload((uint8_t*)&safety_value_, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_VALUE:
+    case Command::DO_SET_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetValue(temp)) {
@@ -262,14 +262,14 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_VALUE:
+    case Command::DO_GET_VALUE:
         if(request.payload_size() == 0) {
             temp = GetValue();
             response.set_payload((uint8_t*)&temp, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_CHANNEL_STATE:
+    case Command::DO_SET_CHANNEL_STATE:
         if(request.payload_size() == 2) {
             index = request.payload()[0];
             state = request.payload()[1];
@@ -282,7 +282,7 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_CHANNEL_STATE:
+    case Command::DO_GET_CHANNEL_STATE:
         if(request.payload_size() == 1) {
             index = request.payload()[0];
             if(GetChannelState(index, state)) {

@@ -15,6 +15,9 @@ DigitalInputChannel::DigitalInputChannel(driver::DigitalInputPin pin, const uint
         debounce_(debounce),
         integrator_(0),
         state_(false),
+        rising_edge_irq_enable_flag_(false),
+        falling_edge_irq_enable_flag_(false),
+        irq_flag_(false),
         rising_edge_counter_(0),
         falling_edge_counter_(0) {
     state_ = pin_.GetState();
@@ -30,6 +33,30 @@ uint32_t DigitalInputChannel::debounce() {
 
 void DigitalInputChannel::set_debounce(const uint32_t debounce) {
     debounce_ = debounce;
+}
+
+bool DigitalInputChannel::rising_edge_irq_enable_flag() {
+    return rising_edge_irq_enable_flag_;
+}
+
+void DigitalInputChannel::set_rising_edge_irq_enable_flag(const bool value) {
+    rising_edge_irq_enable_flag_ = value;
+}
+
+bool DigitalInputChannel::falling_edge_irq_enable_flag() {
+    return falling_edge_irq_enable_flag_;
+}
+
+void DigitalInputChannel::set_falling_edge_irq_enable_flag(const bool value) {
+    falling_edge_irq_enable_flag_ = value;
+}
+
+bool DigitalInputChannel::irq_flag() {
+    return irq_flag_;
+}
+
+bool DigitalInputChannel::reset_irq_flag() {
+    irq_flag_ = false;
 }
 
 uint32_t DigitalInputChannel::rising_edge_counter() {
@@ -76,12 +103,18 @@ void DigitalInputChannel::Tick() {
         if(state_ == false) {
             state_ = true;  // state of debounced input is 1
             rising_edge_counter_++;
+            if(rising_edge_irq_enable_flag_) {
+                irq_flag_ = true;
+            }
         }
     }
     else if (integrator_ == 0) {
         if(state_ == true) {
             state_ = false;  //state of debounced input is 0
             falling_edge_counter_++;
+            if(falling_edge_irq_enable_flag_) {
+                irq_flag_ = true;
+            }
         }
     }
 }

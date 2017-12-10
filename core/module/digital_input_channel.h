@@ -19,6 +19,12 @@ public:
     bool state();
     uint32_t debounce();
     void set_debounce(const uint32_t debounce);
+    bool rising_edge_irq_enable_flag();
+    void set_rising_edge_irq_enable_flag(const bool value);
+    bool falling_edge_irq_enable_flag();
+    void set_falling_edge_irq_enable_flag(const bool value);
+    bool irq_flag();
+    bool reset_irq_flag();
     uint32_t rising_edge_counter();
     uint32_t falling_edge_counter();
     void ResetRisingEdgeCounter();
@@ -30,8 +36,12 @@ private:
     uint32_t debounce_;
     uint32_t integrator_;
     bool state_;
+    bool rising_edge_irq_enable_flag_;
+    bool falling_edge_irq_enable_flag_;
+    bool irq_flag_;
     uint32_t rising_edge_counter_;
     uint32_t falling_edge_counter_;
+
 };
 
 } /* namespace module */
