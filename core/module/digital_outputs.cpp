@@ -6,15 +6,13 @@
  */
 #include "digital_outputs.h"
 
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
-
 #define TASK_DELAY_MS                   (0)
 #define TASK_PERIOD_MS                  (10)
 
 #define DEFAULT_POWER_ON_VALUE          (0)
 #define DEFAULT_SAFETY_VALUE            (0)
 
-#define RELAY_PULL_MS                   (500)
+#define RELAY_PULL_MS                   (100)
 
 namespace i2c_hat {
 namespace module {
@@ -60,7 +58,6 @@ void DigitalOutputs::LoadPowerOnValue() {
   * @param  powerOnValue: the PowerOn Value
   * @retval None
   */
-
 bool DigitalOutputs::SetPowerOnValue(const uint32_t value) {
     if(IsValid(value)) {
         if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, value)) {
@@ -79,7 +76,6 @@ bool DigitalOutputs::SetPowerOnValue(const uint32_t value) {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::LoadSafetyValue() {
     SetValue(safety_value_);
 }
@@ -89,7 +85,6 @@ void DigitalOutputs::LoadSafetyValue() {
   * @param  safetyValue: the Safety Value
   * @retval None
   */
-
 bool DigitalOutputs::SetSafetyValue(const uint32_t value) {
     if(IsValid(value)) {
         if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_SAFETY_VALUE, value)) {
@@ -108,7 +103,6 @@ bool DigitalOutputs::SetSafetyValue(const uint32_t value) {
   * @param  states:
   * @retval None
   */
-
 bool DigitalOutputs::SetValue(const uint32_t value) {
     uint32_t i, mask;
 
@@ -128,7 +122,6 @@ bool DigitalOutputs::SetValue(const uint32_t value) {
   * @param  state: channel state
   * @retval error code
   */
-
 bool DigitalOutputs::SetChannelState(const uint8_t index, const bool state) {
 
     if(index < kChannelCount) {
@@ -144,7 +137,6 @@ bool DigitalOutputs::SetChannelState(const uint8_t index, const bool state) {
   * @param  state: reference to store state
   * @retval error code
   */
-
 bool DigitalOutputs::GetChannelState(const uint8_t index, bool& state) {
     if(index < kChannelCount) {
         state = channels_[index].GetState();
@@ -158,13 +150,12 @@ bool DigitalOutputs::GetChannelState(const uint8_t index, bool& state) {
   * @param  None
   * @retval all channel states
   */
-
 uint32_t DigitalOutputs::GetValue() {
     uint32_t i, value;
 
     value = 0;
     for(i = 0; i < kChannelCount; i++) {
-        value |= channels_[i].GetState() ? 0x01 << i : 0x00;
+        value |= channels_[i].GetState() ? 0x01 << i : 0x00 ;
     }
     return value;
 }
@@ -174,7 +165,6 @@ uint32_t DigitalOutputs::GetValue() {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::Init() {
     bool success;
 
@@ -196,7 +186,6 @@ void DigitalOutputs::Init() {
   * @param  None
   * @retval None
   */
-
 void DigitalOutputs::Run() {
     uint32_t i;
 
@@ -210,7 +199,6 @@ void DigitalOutputs::Run() {
   * @param  event: event code
   * @retval None
   */
-
 void DigitalOutputs::ReceiveEvent(const uint32_t event) {
     if(event == EVENT_CWDT_TIMEOUT) {
         LoadSafetyValue();
@@ -224,7 +212,6 @@ void DigitalOutputs::ReceiveEvent(const uint32_t event) {
   * @retval 1 if response
   *         0 if no response
   */
-
 bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
     static uint32_t temp;
     uint8_t index;
@@ -232,8 +219,8 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
     bool response_flag;
 
     response_flag = false;
-    switch(request.command()) {
-    case CMD_DO_SET_POWER_ON_VALUE:
+    switch((Command)request.command()) {
+    case Command::DO_SET_POWER_ON_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetPowerOnValue(temp)) {
@@ -242,13 +229,13 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_POWER_ON_VALUE:
+    case Command::DO_GET_POWER_ON_VALUE:
         if(request.payload_size() == 0) {
             response.set_payload((uint8_t*)&power_on_value_, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_SAFETY_VALUE:
+    case Command::DO_SET_SAFETY_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetSafetyValue(temp)) {
@@ -257,13 +244,13 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_SAFETY_VALUE:
+    case Command::DO_GET_SAFETY_VALUE:
         if(request.payload_size() == 0) {
             response.set_payload((uint8_t*)&safety_value_, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_VALUE:
+    case Command::DO_SET_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
             if(SetValue(temp)) {
@@ -273,14 +260,14 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_VALUE:
+    case Command::DO_GET_VALUE:
         if(request.payload_size() == 0) {
             temp = GetValue();
             response.set_payload((uint8_t*)&temp, 4);
             response_flag = true;
         }
         break;
-    case CMD_DO_SET_CHANNEL_STATE:
+    case Command::DO_SET_CHANNEL_STATE:
         if(request.payload_size() == 2) {
             index = request.payload()[0];
             state = request.payload()[1];
@@ -293,7 +280,7 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
             }
         }
         break;
-    case CMD_DO_GET_CHANNEL_STATE:
+    case Command::DO_GET_CHANNEL_STATE:
         if(request.payload_size() == 1) {
             index = request.payload()[0];
             if(GetChannelState(index, state)) {
@@ -313,5 +300,3 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif
