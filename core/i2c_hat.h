@@ -13,7 +13,6 @@
 #include "driver/i2c_port.h"
 #include "frame/frame.h"
 #include "module/communication_watchdog.h"
-#include "module/digital_inputs.h"
 #include "module/digital_outputs.h"
 #include "module/status_led.h"
 #include "board.h"
@@ -33,14 +32,7 @@ private:
     /******** MODULES *******/
     module::CommunicationWatchdog communication_watchdog_;
     module::StatusLed status_led_;
-
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-    module::DigitalInputs digital_inputs_;
-#endif
-
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
     module::DigitalOutputs digital_outputs_;
-#endif
 
     uint8_t* GetStatusWord();
     bool Register(module::Module& module);

@@ -19,14 +19,7 @@ I2CHat::I2CHat() :
     // Register modules
     Register(status_led_);
     Register(communication_watchdog_);
-
-#ifdef DIGITAL_INPUT_CHANNEL_COUNT
-    Register(digital_inputs_);
-#endif
-
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
     Register(digital_outputs_);
-#endif
 }
 
 uint8_t* I2CHat::GetStatusWord() {
