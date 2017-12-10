@@ -13,7 +13,7 @@
 #include "../commands.h"
 #include "../board.h"
 
-#define BYTES_TO_UINT32(__BYTES__, __UINT32__)  (__UINT32__ = __BYTES__[0] + (__BYTES__[1] << 8) + (__BYTES__[2] << 16) + (__BYTES__[3] << 24))
+#define BYTES_TO_UINT32(__BYTES__, __UINT32__)  (__UINT32__ = (__BYTES__)[0] + ((__BYTES__)[1] << 8) + ((__BYTES__)[2] << 16) + ((__BYTES__)[3] << 24))
 
 namespace i2c_hat {
 namespace module {
