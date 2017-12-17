@@ -32,7 +32,7 @@
         driver::DigitalInputPin(DI4_GPIO_Port, DI4_Pin, true), \
         driver::DigitalInputPin(DI5_GPIO_Port, DI5_Pin, true)
 
-#define IRQ_PIN                             driver::DigitalOutputPin(IRQ_GPIO_Port, IRQ_Pin, true)
+#define IRQ_PIN                             driver::DigitalOutputPin(IRQ_GPIO_Port, IRQ_Pin, false, true)
 
 #define DIGITAL_OUTPUT_CHANNEL_COUNT        (6)
 

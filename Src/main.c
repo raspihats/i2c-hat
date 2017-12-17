@@ -485,7 +485,7 @@ static void MX_GPIO_Init(void)
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
 
   /**/
-  LL_GPIO_ResetOutputPin(IRQ_GPIO_Port, IRQ_Pin);
+  LL_GPIO_SetOutputPin(IRQ_GPIO_Port, IRQ_Pin);
 
   /**/
   LL_GPIO_ResetOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin);

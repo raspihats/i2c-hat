@@ -55,7 +55,7 @@ void DigitalInputs::ClearIRQ() {
         channels_[i].reset_irq_flag();
     }
 
-    irq_.SetState(false);
+    irq_.SetState(true);
 }
 
 /**
@@ -247,7 +247,7 @@ void DigitalInputs::Run() {
     // generate IRQ
     if((irq_status_ > 0) && (irq_status_ != irq_status_old) ) {
         irq_capture_ = GetValue();
-        irq_.SetState(true);
+        irq_.SetState(false);
     }
 
     irq_status_old = irq_status_;

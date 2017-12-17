@@ -10,11 +10,11 @@
 namespace i2c_hat {
 namespace driver {
 
-DigitalOutputPin::DigitalOutputPin(GPIO_TypeDef* port, uint16_t pin, const bool inverted) :
+DigitalOutputPin::DigitalOutputPin(GPIO_TypeDef* port, uint16_t pin, const bool inverted, const bool initial) :
         port_(port),
         pin_(pin),
         inverted_(inverted) {
-    SetState(false);
+    SetState(initial);
 }
 
 bool DigitalOutputPin::GetState() {
