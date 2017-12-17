@@ -42,6 +42,6 @@
         driver::DigitalInputPin(DI14_GPIO_Port, DI14_Pin, true), \
         driver::DigitalInputPin(DI15_GPIO_Port, DI15_Pin, true)
 
-#define IRQ_PIN                             driver::DigitalOutputPin(IRQ_GPIO_Port, IRQ_Pin, true)
+#define IRQ_PIN                             driver::DigitalOutputPin(IRQ_GPIO_Port, IRQ_Pin, false, true)
 
 #endif /* BOARD_H_ */

@@ -15,7 +15,7 @@ namespace driver {
 
 class DigitalOutputPin {
 public:
-    DigitalOutputPin(GPIO_TypeDef* port, uint16_t pin, const bool inverted=false);
+    DigitalOutputPin(GPIO_TypeDef* port, uint16_t pin, const bool inverted=false, const bool initial=false);
     bool GetState();
     void SetState(bool state);
 private:
