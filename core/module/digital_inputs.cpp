@@ -234,7 +234,6 @@ void DigitalInputs::Init() {
   * @retval None
   */
 void DigitalInputs::Run() {
-//    static uint32_t irq_status_old = 0;
     uint32_t i;
 
     // update IRQ Status reg
@@ -245,12 +244,10 @@ void DigitalInputs::Run() {
     }
 
     // generate IRQ
-    if((irq_status_ > 0) /*&& (irq_status_ != irq_status_old)*/ ) {
+    if(irq_status_ > 0 and irq_.GetState()) {
         irq_capture_ = GetValue();
         irq_.SetState(false);
     }
-
-//    irq_status_old = irq_status_;
 
 //    // Encoders CW and CCW counters
 //    if(channel & 0x01) { // enter here every second encoder input channel, even input channel numbers
