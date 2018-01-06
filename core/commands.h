@@ -44,8 +44,7 @@ enum class Command {
 enum class IRQReg {
     DI_FALLING_EDGE_CONTROL             = 0x20,
     DI_RISING_EDGE_CONTROL              = 0x21,
-    DI_STATUS                           = 0x22,
-    DI_CAPTURE                          = 0x23,
+    DI_CAPTURE_QUEUE                    = 0x22,
 };
 
 #endif /* COMMANDS_H_ */
