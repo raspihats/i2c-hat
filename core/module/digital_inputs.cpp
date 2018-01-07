@@ -128,6 +128,24 @@ void DigitalInputs::ResetCounters() {
 }
 
 /**
+  * @brief  Triggers IRQ pin, pulls down IRQ pin
+  * @param  None
+  * @retval None
+  */
+inline void DigitalInputs::TriggerIRQ() {
+    irq_.SetState(false);
+}
+
+/**
+  * @brief  Releases IRQ pin
+  * @param  None
+  * @retval None
+  */
+inline void DigitalInputs::ReleaseIRQ() {
+    irq_.SetState(true);
+}
+
+/**
   * @brief  Gets IRQ register
   * @param  reg - Register
   * @retval Register value
@@ -157,7 +175,7 @@ uint32_t DigitalInputs::GetIRQReg(const IRQReg reg) {
         }
         break;
     case IRQReg::DI_CAPTURE_QUEUE:
-        flag = irq_queue_.Get(value);
+        flag = irq_capture_queue_.Get(value);
         if(not flag) {
             value = 0;  // This means an empty irq_queue_
         }
@@ -196,7 +214,7 @@ bool DigitalInputs::SetIRQReg(const IRQReg reg, const uint32_t value) {
             break;
         case IRQReg::DI_CAPTURE_QUEUE:
             if(value == 0) {
-                irq_queue_.Clear();
+                irq_capture_queue_.Clear();
                 result = true;
             }
             break;
@@ -205,6 +223,10 @@ bool DigitalInputs::SetIRQReg(const IRQReg reg, const uint32_t value) {
         }
     }
     return result;
+}
+
+bool DigitalInputs::IsIRQCaptureQueueFull() {
+    return irq_capture_queue_.IsFull();
 }
 
 /**
@@ -238,16 +260,15 @@ void DigitalInputs::Run() {
     }
 
     if(irq_status > 0) {
-        if(irq_queue_.IsFull()) {
-            // TODO set status word bit
-            irq_queue_.Get(dump);   // dump one value because queue was not read in time and must store new value
+        if(irq_capture_queue_.IsFull()) {
+            irq_capture_queue_.Get(dump);   // dump one value because queue was not read in time and must store new value
         }
-        irq_queue_.Put((value << 16) + irq_status);
-        irq_.SetState(false); // generate IRQ
+        irq_capture_queue_.Put((value << 16) + irq_status);
+        TriggerIRQ();
     }
     else {
-        if(irq_queue_.IsEmpty()) {
-            irq_.SetState(true);    // clear IRQ
+        if(irq_capture_queue_.IsEmpty()) {
+            ReleaseIRQ();
         }
     }
 
@@ -308,6 +329,7 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             buffer[3] = (uint8_t)(u32_temp >> 24);
             response.set_payload(buffer, 4);
             response_flag = true;
+            ReleaseIRQ();
         }
         break;
     case Command::DI_GET_CHANNEL_STATE:

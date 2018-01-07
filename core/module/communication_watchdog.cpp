@@ -26,7 +26,7 @@ CommunicationWatchdog::CommunicationWatchdog() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS),
         period_(CWDT_DEFAULT_PERIOD_MS),
         communication_ (false),
-        state_(STATE_DISABLED) {
+        state_(State::DISABLED) {
 
 }
 
@@ -60,8 +60,18 @@ bool CommunicationWatchdog::SetPeriod(const uint32_t period) {
   * @param  None
   * @retval None
   */
-void CommunicationWatchdog::feed() {
+void CommunicationWatchdog::Feed() {
     communication_ = true;
+}
+
+/**
+  * @brief  Check if the communication watchdog has expired, timeout occurred
+  * @param  None
+  * @retval TRUE    Communication watchdog expired
+  * @retval FALSE   Communication watchdog disabbled or running
+  */
+bool CommunicationWatchdog::IsExpired() {
+    return state_ == State::TIMEOUT;
 }
 
 /**
@@ -87,20 +97,20 @@ void CommunicationWatchdog::Run() {
     static uint32_t period_cnt;
 
     switch(state_) {
-    case STATE_DISABLED:
+    case State::DISABLED:
         if(communication_) {
             if(period_ > CWDT_DISABLED_PERIOD_MS) {
                 period_cnt = 0;
                 SendEvent(EVENT_CWDT_MONITORING);
-                state_ = STATE_MONITORING;
+                state_ = State::MONITORING;
             }
         }
         break;
-    case STATE_MONITORING:
+    case State::MONITORING:
         if(communication_) {
             if(period_ == CWDT_DISABLED_PERIOD_MS) {
                 SendEvent(EVENT_CWDT_DISABLED);
-                state_ = STATE_DISABLED;
+                state_ = State::DISABLED;
             }
             period_cnt = 0;
         }
@@ -109,25 +119,25 @@ void CommunicationWatchdog::Run() {
             if(period_cnt >= period_) {
                 period_cnt = 0;
                 SendEvent(EVENT_CWDT_TIMEOUT);
-                state_ = STATE_TIMEOUT;
+                state_ = State::TIMEOUT;
             }
         }
         break;
-    case STATE_TIMEOUT:
+    case State::TIMEOUT:
         if(communication_) {
             if(period_ > CWDT_DISABLED_PERIOD_MS) {
                 period_cnt = 0;
                 SendEvent(EVENT_CWDT_MONITORING);
-                state_ = STATE_MONITORING;
+                state_ = State::MONITORING;
             }
             else {
-                state_ = STATE_DISABLED;
+                state_ = State::DISABLED;
             }
         }
         break;
     default:
         period_cnt = 0;
-        state_ = STATE_DISABLED;
+        state_ = State::DISABLED;
     }
 
     communication_ = false;
@@ -152,7 +162,7 @@ void CommunicationWatchdog::ReceiveEvent(const uint32_t event) {
 bool CommunicationWatchdog::ProcessRequest(Frame& request, Frame& response) {
     bool response_flag = false;
 
-    feed();
+    Feed();
 
     switch((Command)request.command()) {
     case Command::CWDT_SET_PERIOD:
