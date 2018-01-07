@@ -174,7 +174,7 @@ uint32_t DigitalInputs::GetIRQReg(const IRQReg reg) {
             }
         }
         break;
-    case IRQReg::DI_CAPTURE_QUEUE:
+    case IRQReg::DI_CAPTURE:
         flag = irq_capture_queue_.Get(value);
         if(not flag) {
             value = 0;  // This means an empty irq_queue_
@@ -212,7 +212,7 @@ bool DigitalInputs::SetIRQReg(const IRQReg reg, const uint32_t value) {
             }
             result = true;
             break;
-        case IRQReg::DI_CAPTURE_QUEUE:
+        case IRQReg::DI_CAPTURE:
             if(value == 0) {
                 irq_capture_queue_.Clear();
                 result = true;
@@ -410,7 +410,7 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             irq_reg = (IRQReg)request.payload()[0];
             if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
                     (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) or
-                    (irq_reg == IRQReg::DI_CAPTURE_QUEUE) ) {
+                    (irq_reg == IRQReg::DI_CAPTURE) ) {
                 u32_temp = GetIRQReg(irq_reg);
                 buffer[0] = static_cast<int>(irq_reg);
                 buffer[1] = (uint8_t)u32_temp;
@@ -429,7 +429,7 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             BYTES_TO_UINT32(data + 1, u32_temp);
             if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
                     (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) or
-                    (irq_reg == IRQReg::DI_CAPTURE_QUEUE) ) {
+                    (irq_reg == IRQReg::DI_CAPTURE) ) {
                 if(SetIRQReg(irq_reg, u32_temp)) {
                     u32_temp = GetIRQReg(irq_reg);
                     buffer[0] = static_cast<int>(irq_reg);
