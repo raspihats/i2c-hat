@@ -14,7 +14,8 @@ I2CHat::I2CHat() :
         cooperative_os::Scheduler(),
         kFirmwareVersion{FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_PATCH},
         kBoardName(BOARD_NAME),
-        i2c_port_(I2C1) {
+        i2c_port_(I2C1),
+        status_(0) {
 
     // Register modules
     Register(status_led_);
@@ -22,15 +23,24 @@ I2CHat::I2CHat() :
     Register(digital_inputs_);
 }
 
-uint8_t* I2CHat::GetStatusWord() {
-    static uint32_t status;
+void I2CHat::UpdateStatusWord() {
+    status_ |= LL_RCC_IsActiveFlag_PORRST()             ? 0x01 : 0x00;
+    status_ |= LL_RCC_IsActiveFlag_SFTRST()             ? 0x02 : 0x00;
+    status_ |= LL_RCC_IsActiveFlag_IWDGRST()            ? 0x04 : 0x00;
+    status_ |= communication_watchdog_.IsExpired()      ? 0x08 : 0x00;
+    status_ |= digital_inputs_.IsIRQCaptureQueueFull()  ? 0x10 : 0x00;
+}
 
-    status = 0;
-    status |= LL_RCC_IsActiveFlag_PORRST() ? 0x01 : 0;
-    status |= LL_RCC_IsActiveFlag_SFTRST() ? 0x02 : 0;
-    status |= LL_RCC_IsActiveFlag_IWDGRST() ? 0x04 : 0;
+uint32_t I2CHat::GetStatusWord() {
+    uint32_t status;
+
+    status = status_;
+
+    // clear status
+    status_ = 0;
     LL_RCC_ClearResetFlags();
-    return (uint8_t*)&status;
+
+    return status;
 }
 
 bool I2CHat::Register(module::Module& module) {
@@ -62,6 +72,7 @@ void I2CHat::Run() {
     static uint32_t transmit_size;
 
     Dispatch();
+
     receive_size = 0;
     i2c_port_.transfer(receive_size, transmit_size);
     if(request.Decode(i2c_port_.receive_buffer(), receive_size) == FD_RCODE_SUCCESS) {
@@ -69,14 +80,17 @@ void I2CHat::Run() {
             transmit_size = response.Encode(i2c_port_.transmit_buffer(), i2c_port_.transmit_buffer_size());
         }
     }
+
+    UpdateStatusWord();
     // feed watchdog
     LL_IWDG_ReloadCounter(IWDG);
 }
 
 bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
-    bool response_flag;
-    uint32_t i;
     module::Module **moduleList;
+    uint32_t i;
+    static uint32_t u32;
+    bool response_flag;
 
     response.set_id(request.id());
     response.set_command(request.command());
@@ -106,7 +120,8 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
             break;
         case Command::GET_STATUS_WORD:
             if(request.payload_size() == 0) {
-                response.set_payload(GetStatusWord(), 4);
+                u32 = GetStatusWord();
+                response.set_payload((uint8_t*)&u32, 4);
                 response_flag = true;
             }
             break;

@@ -18,6 +18,7 @@ namespace module {
 class DigitalInputs: public Module {
 public:
     DigitalInputs();
+    bool IsIRQCaptureQueueFull();
     void Init();
     void Run();
     void ReceiveEvent(const uint32_t event);
@@ -31,16 +32,16 @@ private:
     const uint32_t kChannelCount;
     DigitalInputChannel channels_[DIGITAL_INPUT_CHANNEL_COUNT];
     driver::DigitalOutputPin irq_;
-    uint32_t irq_status_;
-    uint32_t irq_capture_;
+    utils::Queue<128> irq_capture_queue_; // use only powers of 2 for queue size
 
     bool IsValid(const uint32_t value);
-    void ClearIRQ();
     bool GetChannelState(const uint32_t index, bool& state);
     uint32_t GetValue();
     bool GetCounter(const uint32_t index, const CounterTypes type, uint32_t& value);
     bool ResetCounter(const uint32_t channel, const CounterTypes type);
     void ResetCounters();
+    void TriggerIRQ();
+    void ReleaseIRQ();
     uint32_t GetIRQReg(const IRQReg reg);
     bool SetIRQReg(const IRQReg reg, const uint32_t value);
 };

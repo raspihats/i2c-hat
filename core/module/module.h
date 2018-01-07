@@ -12,6 +12,7 @@
 #include "../frame/frame.h"
 #include "../commands.h"
 #include "../board.h"
+#include "../utils/queue.h"
 
 #define BYTES_TO_UINT32(__BYTES__, __UINT32__)  (__UINT32__ = (__BYTES__)[0] + ((__BYTES__)[1] << 8) + ((__BYTES__)[2] << 16) + ((__BYTES__)[3] << 24))
 

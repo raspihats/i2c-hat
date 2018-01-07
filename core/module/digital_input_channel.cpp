@@ -52,11 +52,9 @@ void DigitalInputChannel::set_falling_edge_irq_enable_flag(const bool value) {
 }
 
 bool DigitalInputChannel::irq_flag() {
-    return irq_flag_;
-}
-
-void DigitalInputChannel::reset_irq_flag() {
+    bool temp = irq_flag_;
     irq_flag_ = false;
+    return temp;
 }
 
 uint32_t DigitalInputChannel::rising_edge_counter() {
