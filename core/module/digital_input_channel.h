@@ -15,10 +15,9 @@ namespace module {
 
 class DigitalInputChannel {
 public:
-    DigitalInputChannel(driver::DigitalInputPin pin, const uint32_t debounce=5);
+    DigitalInputChannel(driver::DigitalInputPin pin);
     bool state();
     uint32_t debounce();
-    void set_debounce(const uint32_t debounce);
     bool rising_edge_irq_enable_flag();
     void set_rising_edge_irq_enable_flag(const bool value);
     bool falling_edge_irq_enable_flag();
@@ -29,6 +28,7 @@ public:
     void ResetRisingEdgeCounter();
     void ResetFallingEdgeCounter();
     void ResetCounters();
+    void Init(const uint32_t debounce);
     void Tick();
 private:
     driver::DigitalInputPin pin_;

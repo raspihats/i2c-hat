@@ -25,11 +25,7 @@ DigitalInputs::DigitalInputs() :
         kChannelCount(DIGITAL_INPUT_CHANNEL_COUNT),
         channels_{DIGITAL_INPUT_CHANNELS},
         irq_(IRQ_PIN) {
-    uint32_t i;
 
-    for(i = 0; i < kChannelCount; i++) {
-        channels_[i].set_debounce(DEBOUNCE_TIME_MS / TASK_PERIOD_MS);
-    }
 }
 
 /**
@@ -234,9 +230,12 @@ bool DigitalInputs::IsIRQCaptureQueueFull() {
   * @param  None
   * @retval None
   */
-
 void DigitalInputs::Init() {
+    uint32_t i;
 
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].Init(DEBOUNCE_TIME_MS / TASK_PERIOD_MS);
+    }
 }
 
 /**
