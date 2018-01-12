@@ -10,9 +10,9 @@
 namespace i2c_hat {
 namespace module {
 
-DigitalInputChannel::DigitalInputChannel(driver::DigitalInputPin pin, const uint32_t debounce) :
+DigitalInputChannel::DigitalInputChannel(driver::DigitalInputPin pin) :
         pin_(pin),
-        debounce_(debounce),
+        debounce_(100),
         integrator_(0),
         state_(false),
         rising_edge_irq_enable_flag_(false),
@@ -20,7 +20,6 @@ DigitalInputChannel::DigitalInputChannel(driver::DigitalInputPin pin, const uint
         irq_flag_(false),
         rising_edge_counter_(0),
         falling_edge_counter_(0) {
-    state_ = pin_.GetState();
 }
 
 bool DigitalInputChannel::state() {
@@ -29,10 +28,6 @@ bool DigitalInputChannel::state() {
 
 uint32_t DigitalInputChannel::debounce() {
     return debounce_;
-}
-
-void DigitalInputChannel::set_debounce(const uint32_t debounce) {
-    debounce_ = debounce;
 }
 
 bool DigitalInputChannel::rising_edge_irq_enable_flag() {
@@ -76,6 +71,17 @@ void DigitalInputChannel::ResetFallingEdgeCounter() {
 void DigitalInputChannel::ResetCounters() {
     rising_edge_counter_ = 0;
     falling_edge_counter_ = 0;
+}
+
+void DigitalInputChannel::Init(const uint32_t debounce) {
+    debounce_ = debounce;
+    state_ = pin_.GetState();
+    if(state_) {
+        integrator_ = debounce;
+    }
+    else {
+        integrator_ = 0;
+    }
 }
 
 void DigitalInputChannel::Tick() {

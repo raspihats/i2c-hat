@@ -28,11 +28,6 @@ DigitalOutputs::DigitalOutputs() :
         channels_{DIGITAL_OUTPUT_CHANNELS},
         power_on_value_(DEFAULT_POWER_ON_VALUE),
         safety_value_(DEFAULT_SAFETY_VALUE) {
-            uint32_t i;
-
-            for(i = 0; i < kChannelCount; i++) {
-                channels_[i].set_pull(RELAY_PULL_MS / TASK_PERIOD_MS);
-            }
 }
 
 /**
@@ -167,6 +162,7 @@ uint32_t DigitalOutputs::GetValue() {
   */
 void DigitalOutputs::Init() {
     bool success;
+    uint32_t i;
 
     success = driver::Eeprom::Read(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, power_on_value_);
     if(not success) {
@@ -176,6 +172,10 @@ void DigitalOutputs::Init() {
     success = driver::Eeprom::Read(driver::EEP_VIRT_ADR_DO_SAFETY_VALUE, safety_value_);
     if(not success) {
         // TODO Error Handling
+    }
+
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].Init(RELAY_PULL_MS / TASK_PERIOD_MS, 70);
     }
 
     LoadPowerOnValue();
