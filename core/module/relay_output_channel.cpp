@@ -10,13 +10,13 @@
 namespace i2c_hat {
 namespace module {
 
-RelayOutputChannel::RelayOutputChannel(driver::DigitalOutputPwm pin, const uint32_t pull, const uint32_t hold) :
+RelayOutputChannel::RelayOutputChannel(driver::DigitalOutputPwm pin) :
         pin_(pin),
-        pull_(pull),
-        hold_(hold),
+        pull_(500),
+        hold_(70),
         counter_(0),
         state_(ST_OFF) {
-    pin_.SetDuty(0);
+
 }
 
 uint32_t RelayOutputChannel::pull() {
@@ -49,6 +49,12 @@ void RelayOutputChannel::SetState(const bool state) {
     else {
         state_ = ST_OFF;
     }
+}
+
+void RelayOutputChannel::Init(const uint32_t pull, const uint32_t hold) {
+    pin_.SetDuty(0);
+    pull_ = pull;
+    hold_ = hold;
 }
 
 void RelayOutputChannel::Tick() {

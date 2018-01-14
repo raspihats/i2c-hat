@@ -16,12 +16,13 @@ namespace module {
 class CommunicationWatchdog: public Module {
 public:
     CommunicationWatchdog();
+    bool IsExpired();
     bool ProcessRequest(Frame& request, Frame& response);
 private:
     enum State {
-        STATE_DISABLED,
-        STATE_MONITORING,
-        STATE_TIMEOUT,
+        DISABLED,
+        MONITORING,
+        TIMEOUT,
     };
 
     uint32_t period_;
@@ -30,7 +31,7 @@ private:
 
     uint32_t period();
     bool SetPeriod(const uint32_t period);
-    void feed();
+    void Feed();
     void Init();
     void Run();
     void ReceiveEvent(const uint32_t event);
