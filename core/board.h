@@ -13,7 +13,7 @@
 #define FW_VERSION_SIZE                     (3)
 #define FW_VERSION_MAJOR                    (2)
 #define FW_VERSION_MINOR                    (1)
-#define FW_VERSION_PATCH                    (1)
+#define FW_VERSION_PATCH                    (2)
 
 #define BOARD_NAME_SIZE                     (25)
 #define BOARD_NAME                          "DI16ac I2C-HAT"
