@@ -71,7 +71,7 @@ void CommunicationWatchdog::Feed() {
   * @retval FALSE   Communication watchdog disabbled or running
   */
 bool CommunicationWatchdog::IsExpired() {
-    return state_ == State::TIMEOUT;
+    return (communication_ == false) and (state_ == State::TIMEOUT);
 }
 
 /**
