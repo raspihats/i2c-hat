@@ -8,18 +8,18 @@
 #ifndef MODULE_DIGITAL_OUTPUT_CHANNEL_H_
 #define MODULE_DIGITAL_OUTPUT_CHANNEL_H_
 
-#include "../driver/digital_output_pin.h"
+#include "../driver/digital_output_pwm.h"
 
 namespace i2c_hat {
 namespace module {
 
 class DigitalOutputChannel {
 public:
-    DigitalOutputChannel(driver::DigitalOutputPin pin);
+    DigitalOutputChannel(driver::DigitalOutputPwm pin);
     bool GetState();
     void SetState(const bool state);
 private:
-    driver::DigitalOutputPin pin_;
+    driver::DigitalOutputPwm pin_;
 };
 
 } /* namespace module */

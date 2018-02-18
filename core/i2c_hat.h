@@ -13,7 +13,6 @@
 #include "driver/i2c_port.h"
 #include "frame/frame.h"
 #include "module/communication_watchdog.h"
-#include "module/digital_inputs.h"
 #include "module/digital_outputs.h"
 #include "module/status_led.h"
 #include "board.h"
@@ -29,14 +28,15 @@ private:
     const uint8_t kFirmwareVersion[FW_VERSION_SIZE];
     const uint8_t kBoardName[BOARD_NAME_SIZE];
     driver::I2CPort i2c_port_;
+    uint32_t status_;
 
     /******** MODULES *******/
     module::CommunicationWatchdog communication_watchdog_;
     module::StatusLed status_led_;
-//    module::DigitalInputs digital_inputs_;
-//    module::DigitalOutputs digital_outputs_;
+    module::DigitalOutputs digital_outputs_;
 
-    uint8_t* GetStatusWord();
+    void UpdateStatusWord();
+    uint32_t GetStatusWord();
     bool Register(module::Module& module);
     module::Module** GetModuleList();
     uint32_t GetModuleCount();

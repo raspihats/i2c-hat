@@ -12,8 +12,6 @@
 #include "digital_output_channel.h"
 #include "../driver/eeprom.h"
 
-#ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
-
 namespace i2c_hat {
 namespace module {
 
@@ -43,7 +41,5 @@ private:
 
 } /* namespace module */
 } /* namespace i2c_hat */
-
-#endif
 
 #endif /* MODULE_DIGITAL_OUTPUTS_H_ */

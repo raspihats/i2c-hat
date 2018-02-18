@@ -10,16 +10,17 @@
 namespace i2c_hat {
 namespace module {
 
-DigitalOutputChannel::DigitalOutputChannel(driver::DigitalOutputPin pin) :
+DigitalOutputChannel::DigitalOutputChannel(driver::DigitalOutputPwm pin) :
         pin_(pin) {
 }
 
 bool DigitalOutputChannel::GetState() {
-    return pin_.GetState();
+//    return pin_.GetState();
+    return false;
 }
 
 void DigitalOutputChannel::SetState(const bool state) {
-    pin_.SetState(state);
+//    pin_.SetState(state);
 }
 
 } /* namespace module */

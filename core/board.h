@@ -22,18 +22,13 @@
 
 #define STATUS_LED_PIN                      driver::DigitalOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, true)
 
-//#define DIGITAL_OUTPUT_CHANNEL_COUNT        (10)
-//
-//#define DIGITAL_OUTPUT_CHANNELS \
-//        driver::DigitalOutputPin(RLY0_GPIO_Port, RLY0_Pin), \
-//        driver::DigitalOutputPin(RLY1_GPIO_Port, RLY1_Pin), \
-//        driver::DigitalOutputPin(RLY2_GPIO_Port, RLY2_Pin), \
-//        driver::DigitalOutputPin(RLY3_GPIO_Port, RLY3_Pin), \
-//        driver::DigitalOutputPin(RLY4_GPIO_Port, RLY4_Pin), \
-//        driver::DigitalOutputPin(RLY5_GPIO_Port, RLY5_Pin), \
-//        driver::DigitalOutputPin(RLY6_GPIO_Port, RLY6_Pin), \
-//        driver::DigitalOutputPin(RLY7_GPIO_Port, RLY7_Pin), \
-//        driver::DigitalOutputPin(RLY8_GPIO_Port, RLY8_Pin), \
-//        driver::DigitalOutputPin(RLY9_GPIO_Port, RLY9_Pin)
+#define DIGITAL_OUTPUT_CHANNEL_COUNT        (6)
 
+#define DIGITAL_OUTPUT_CHANNELS \
+        driver::DigitalOutputPwm(TIM14, LL_TIM_CHANNEL_CH1), \
+        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH1), \
+        driver::DigitalOutputPwm(TIM16, LL_TIM_CHANNEL_CH1), \
+        driver::DigitalOutputPwm(TIM17, LL_TIM_CHANNEL_CH1), \
+        driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH3), \
+        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH1)
 #endif /* BOARD_H_ */

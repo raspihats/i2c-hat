@@ -38,14 +38,17 @@ enum class Command {
     DO_GET_VALUE                        = 0x35,
     DO_SET_CHANNEL_STATE                = 0x36,
     DO_GET_CHANNEL_STATE                = 0x37,
+    DO_SET_PWM_CHANNEL_FREQUENCY        = 0x38,
+    DO_GET_PWM_CHANNEL_FREQUENCY        = 0x39,
+    DO_SET_PWM_CHANNEL_DUTY        = 0x38,
+    DO_GET_PWM_CHANNEL_DUTY        = 0x39,
 };
 
 
 enum class IRQReg {
     DI_FALLING_EDGE_CONTROL             = 0x20,
     DI_RISING_EDGE_CONTROL              = 0x21,
-    DI_STATUS                           = 0x22,
-    DI_CAPTURE                          = 0x23,
+    DI_CAPTURE                          = 0x22, //interface to capture queue
 };
 
 #endif /* COMMANDS_H_ */
