@@ -8,7 +8,7 @@
 #ifndef DRIVER_DIGITAL_OUTPUT_PIN_H_
 #define DRIVER_DIGITAL_OUTPUT_PIN_H_
 
-#include "stm32f0xx_ll_gpio.h"
+#include "stm32f3xx_ll_gpio.h"
 
 namespace i2c_hat {
 namespace driver {

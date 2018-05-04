@@ -8,8 +8,8 @@
 #ifndef DRIVER_I2CPORT_H_
 #define DRIVER_I2CPORT_H_
 
-#include "stm32f0xx.h"
-#include "stm32f0xx_ll_i2c.h"
+#include "stm32f3xx.h"
+#include "stm32f3xx_ll_i2c.h"
 
 #define BUFFER_SIZE         (256)
 

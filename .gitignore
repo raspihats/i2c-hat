@@ -5,3 +5,4 @@
 *.mxproject
 *.project
 /.settings
+/Debug/

@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
-  * Description        : This file contains the common defines of the application
+  * @file           : main.h
+  * @brief          : Header for main.c file.
+  *                   This file contains the common defines of the application.
   ******************************************************************************
   ** This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -9,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -35,24 +36,26 @@
   *
   ******************************************************************************
   */
+
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
-#include "stm32f0xx.h"
-#include "stm32f0xx_ll_i2c.h"
-#include "stm32f0xx_ll_iwdg.h"
-#include "stm32f0xx_ll_crs.h"
-#include "stm32f0xx_ll_rcc.h"
-#include "stm32f0xx_ll_bus.h"
-#include "stm32f0xx_ll_system.h"
-#include "stm32f0xx_ll_exti.h"
-#include "stm32f0xx_ll_cortex.h"
-#include "stm32f0xx_ll_utils.h"
-#include "stm32f0xx_ll_pwr.h"
-#include "stm32f0xx_ll_dma.h"
-#include "stm32f0xx_ll_tim.h"
-#include "stm32f0xx_ll_gpio.h"
+#ifndef __MAIN_H__
+#define __MAIN_H__
+
+/* Includes ------------------------------------------------------------------*/
+#include "stm32f3xx_ll_adc.h"
+#include "stm32f3xx.h"
+#include "stm32f3xx_ll_i2c.h"
+#include "stm32f3xx_ll_iwdg.h"
+#include "stm32f3xx_ll_rcc.h"
+#include "stm32f3xx_ll_bus.h"
+#include "stm32f3xx_ll_system.h"
+#include "stm32f3xx_ll_exti.h"
+#include "stm32f3xx_ll_cortex.h"
+#include "stm32f3xx_ll_utils.h"
+#include "stm32f3xx_ll_pwr.h"
+#include "stm32f3xx_ll_dma.h"
+#include "stm32f3xx_ll_tim.h"
+#include "stm32f3xx_ll_gpio.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -60,41 +63,23 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define ADR3_Pin LL_GPIO_PIN_0
-#define ADR3_GPIO_Port GPIOA
-#define ADR2_Pin LL_GPIO_PIN_1
-#define ADR2_GPIO_Port GPIOA
-#define ADR1_Pin LL_GPIO_PIN_2
-#define ADR1_GPIO_Port GPIOA
-#define ADR0_Pin LL_GPIO_PIN_3
+#define ADR0_Pin LL_GPIO_PIN_0
 #define ADR0_GPIO_Port GPIOA
-#define DI0_Pin LL_GPIO_PIN_4
-#define DI0_GPIO_Port GPIOA
-#define DI1_Pin LL_GPIO_PIN_5
-#define DI1_GPIO_Port GPIOA
-#define DI2_Pin LL_GPIO_PIN_6
-#define DI2_GPIO_Port GPIOA
-#define DI3_Pin LL_GPIO_PIN_7
-#define DI3_GPIO_Port GPIOA
-#define DI4_Pin LL_GPIO_PIN_0
-#define DI4_GPIO_Port GPIOB
-#define DI5_Pin LL_GPIO_PIN_1
-#define DI5_GPIO_Port GPIOB
-#define RLY0_Pin LL_GPIO_PIN_8
+#define ADR1_Pin LL_GPIO_PIN_1
+#define ADR1_GPIO_Port GPIOA
+#define ADR2_Pin LL_GPIO_PIN_2
+#define ADR2_GPIO_Port GPIOA
+#define ADR3_Pin LL_GPIO_PIN_3
+#define ADR3_GPIO_Port GPIOA
+#define RLY0_Pin LL_GPIO_PIN_9
 #define RLY0_GPIO_Port GPIOA
-#define RLY1_Pin LL_GPIO_PIN_9
+#define RLY1_Pin LL_GPIO_PIN_10
 #define RLY1_GPIO_Port GPIOA
-#define RLY2_Pin LL_GPIO_PIN_10
+#define RLY2_Pin LL_GPIO_PIN_15
 #define RLY2_GPIO_Port GPIOA
-#define RLY3_Pin LL_GPIO_PIN_11
-#define RLY3_GPIO_Port GPIOA
-#define RLY4_Pin LL_GPIO_PIN_15
-#define RLY4_GPIO_Port GPIOA
-#define RLY5_Pin LL_GPIO_PIN_3
-#define RLY5_GPIO_Port GPIOB
-#define IRQ_Pin LL_GPIO_PIN_4
-#define IRQ_GPIO_Port GPIOB
-#define STATUS_LED_Pin LL_GPIO_PIN_5
+#define RLY3_Pin LL_GPIO_PIN_3
+#define RLY3_GPIO_Port GPIOB
+#define STATUS_LED_Pin LL_GPIO_PIN_8
 #define STATUS_LED_GPIO_Port GPIOB
 #ifndef NVIC_PRIORITYGROUP_0
 #define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority,
@@ -114,23 +99,22 @@
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
-/* #define USE_FULL_ASSERT    1 */
+/* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
 void _Error_Handler(char *, int);
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+#ifdef __cplusplus
+}
+#endif
 
-/**
-  * @}
-  */ 
+#endif /* __MAIN_H__ */
 
-/**
-  * @}
-*/ 
-
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

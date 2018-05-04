@@ -6,7 +6,7 @@
  */
 
 #include "i2c_hat.h"
-#include "stm32f0xx_ll_rcc.h"
+#include "stm32f3xx_ll_rcc.h"
 
 namespace i2c_hat {
 
@@ -20,7 +20,7 @@ I2CHat::I2CHat() :
     // Register modules
     Register(status_led_);
     Register(communication_watchdog_);
-    Register(digital_inputs_);
+//    Register(digital_inputs_);
     Register(digital_outputs_);
 }
 
@@ -29,7 +29,7 @@ void I2CHat::UpdateStatusWord() {
     status_ |= LL_RCC_IsActiveFlag_SFTRST()             ? 0x02 : 0x00;
     status_ |= LL_RCC_IsActiveFlag_IWDGRST()            ? 0x04 : 0x00;
     status_ |= communication_watchdog_.IsExpired()      ? 0x08 : 0x00;
-    status_ |= digital_inputs_.IsIRQCaptureQueueFull()  ? 0x10 : 0x00;
+//    status_ |= digital_inputs_.IsIRQCaptureQueueFull()  ? 0x10 : 0x00;
 }
 
 uint32_t I2CHat::GetStatusWord() {

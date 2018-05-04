@@ -21,8 +21,12 @@ void DigitalOutputPwm::SetPeriod(const uint32_t period) {
     LL_TIM_SetAutoReload(tim_, period);
 }
 
-void DigitalOutputPwm::SetDuty(const uint32_t duty) {
+void DigitalOutputPwm::SetDuty(uint32_t duty) {
     uint32_t temp;
+
+    if(inverted_) {
+      duty = 100 - duty;
+    }
 
     if(duty == 0) {
         temp = 0;

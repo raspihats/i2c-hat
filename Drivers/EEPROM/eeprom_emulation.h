@@ -31,7 +31,7 @@
 #define __EEPROM_H
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f0xx_flash.h"
+#include "stm32f37x_flash.h"
 
 /* Exported constants --------------------------------------------------------*/
 /* Define the size of the sectors to be used */
