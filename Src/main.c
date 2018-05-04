@@ -107,8 +107,6 @@ int main(void)
   MX_ADC1_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-//  LL_TIM_EnableCounter(TIM2);
-//  LL_TIM_EnableAllOutputs(TIM2);    // MOE bit, only for Timer1
   LL_TIM_EnableCounter(TIM2);
 
   address = I2C_BASE_ADDRESS;
@@ -358,13 +356,15 @@ static void MX_TIM2_Init(void)
 
   LL_TIM_DisableARRPreload(TIM2);
 
+  LL_TIM_SetClockSource(TIM2, LL_TIM_CLOCKSOURCE_INTERNAL);
+
   LL_TIM_OC_EnablePreload(TIM2, LL_TIM_CHANNEL_CH1);
 
   TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
   TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_ENABLE;
   TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
   TIM_OC_InitStruct.CompareValue = 0;
-  TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
+  TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_LOW;
   LL_TIM_OC_Init(TIM2, LL_TIM_CHANNEL_CH1, &TIM_OC_InitStruct);
 
   LL_TIM_OC_DisableFast(TIM2, LL_TIM_CHANNEL_CH1);

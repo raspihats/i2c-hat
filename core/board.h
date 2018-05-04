@@ -37,9 +37,9 @@
 #define DIGITAL_OUTPUT_CHANNEL_COUNT        (4)
 
 #define DIGITAL_OUTPUT_CHANNELS \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH3, true), \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH4, true), \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH1, true), \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH2, true)
+        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH3), \
+        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH4), \
+        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH1), \
+        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH2)
 
 #endif /* BOARD_H_ */
