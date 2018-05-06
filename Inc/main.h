@@ -58,6 +58,7 @@
 #include "stm32f3xx_ll_gpio.h"
 
 /* USER CODE BEGIN Includes */
+#include "stm32f37x_sdadc.h"    // using StdPerioh Lib SDADC driver untill LL driver available
 
 /* USER CODE END Includes */
 
@@ -71,6 +72,10 @@
 #define ADR2_GPIO_Port GPIOA
 #define ADR3_Pin LL_GPIO_PIN_3
 #define ADR3_GPIO_Port GPIOA
+#define CH0P_Pin LL_GPIO_PIN_0
+#define CH0P_GPIO_Port GPIOB
+#define CH0N_Pin LL_GPIO_PIN_1
+#define CH0N_GPIO_Port GPIOB
 #define RLY0_Pin LL_GPIO_PIN_9
 #define RLY0_GPIO_Port GPIOA
 #define RLY1_Pin LL_GPIO_PIN_10
@@ -102,6 +107,7 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
+void Delay_ms_tick(void);
 
 /* USER CODE END Private defines */
 

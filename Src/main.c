@@ -48,6 +48,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+static volatile uint32_t delay_ms_cnt;
 static uint32_t address;
 
 /* USER CODE END PV */
@@ -63,10 +64,13 @@ static void MX_IWDG_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+static uint32_t MX_SDADC1_Init(void);
+static void Delay_ms(const uint32_t millisec);
 
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+void Delay_ms_tick(void);
 
 /* USER CODE END 0 */
 
@@ -78,6 +82,7 @@ static void MX_IWDG_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  static int16_t sdadc_value;
 
   /* USER CODE END 1 */
 
@@ -105,8 +110,9 @@ int main(void)
   MX_TIM2_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
-  MX_IWDG_Init();
+//  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+
   LL_TIM_EnableCounter(TIM2);
 
   address = I2C_BASE_ADDRESS;
@@ -120,6 +126,12 @@ int main(void)
   LL_I2C_EnableOwnAddress1(I2C1);
 
   LL_SYSTICK_EnableIT();
+  MX_SDADC1_Init();
+
+  SDADC_ChannelSelect(SDADC1, SDADC_Channel_6);
+  SDADC_SoftwareStartConv(SDADC1);
+  while((SDADC_GetFlagStatus(SDADC1, SDADC_FLAG_REOC) == RESET));
+  sdadc_value = SDADC_GetConversionValue(SDADC1);
 
   I2CHat_init();
   /* USER CODE END 2 */
@@ -435,6 +447,8 @@ static void MX_TIM2_Init(void)
         * Output
         * EVENT_OUT
         * EXTI
+     PB0   ------> SDADC1_AIN6P
+     PB1   ------> SDADC1_AIN6M
 */
 static void MX_GPIO_Init(void)
 {
@@ -452,8 +466,14 @@ static void MX_GPIO_Init(void)
   /**/
   GPIO_InitStruct.Pin = ADR0_Pin|ADR1_Pin|ADR2_Pin|ADR3_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /**/
+  GPIO_InitStruct.Pin = CH0P_Pin|CH0N_Pin;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /**/
   GPIO_InitStruct.Pin = STATUS_LED_Pin;
@@ -466,6 +486,166 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
+void Delay_ms_tick(void) {
+    if(delay_ms_cnt > 0) {
+        delay_ms_cnt--;
+    }
+}
+
+void Delay_ms(const uint32_t millisec) {
+    delay_ms_cnt = millisec;
+    while(delay_ms_cnt > 0);
+}
+
+static uint32_t MX_SDADC1_Init(void)
+{
+  uint32_t SDADCTimeout;
+
+  SDADC_AINStructTypeDef SDADC_AINStruct;
+  SDADC_InitTypeDef SDADC_InitStruct;
+
+  /* SDADC1 APB2 interface clock enable */
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SDADC1);
+
+  /* PWR APB1 interface clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+
+  /* Enable SDADC analog interface */
+  LL_PWR_EnableSDADC(LL_PWR_SDADC_ANALOG1);
+
+  /* Set the SDADC divider: The SDADC should run @6MHz or 1.5MHz */
+  /* If Sysclk is 72MHz, SDADC divider should be 12 for 6MHz */
+  /* If Sysclk is 72MHz, SDADC divider should be 48 for 1.5MHz*/
+  LL_RCC_SetSDADCClockSource(LL_RCC_SDADC_CLKSRC_SYS_DIV_48);
+
+  SDADC_VREFSelect(SDADC_VREF_VDDA);
+  /* Insert delay equal to ~5 ms */
+  Delay_ms(5);
+
+  /* Enable SDADC */
+  SDADC_Cmd(SDADC1, ENABLE);
+
+  /* Enter initialization mode */
+  SDADC_InitModeCmd(SDADC1, ENABLE);
+
+  SDADCTimeout = 500000;
+  /* Wait for INITRDY flag to be set */
+  while((SDADC_GetFlagStatus(SDADC1, SDADC_FLAG_INITRDY) == RESET) && (--SDADCTimeout != 0));
+  if(SDADCTimeout == 0)
+  {
+    /* INITRDY flag can not set */
+    return 1;
+  }
+
+  SDADC_AINStruct.SDADC_InputMode = SDADC_InputMode_Diff;
+  SDADC_AINStruct.SDADC_Gain = SDADC_Gain_32;
+  SDADC_AINStruct.SDADC_CommonMode = SDADC_CommonMode_VDDA_2;
+  SDADC_AINStruct.SDADC_Offset = 0;
+  SDADC_AINInit(SDADC1, SDADC_Conf_0, &SDADC_AINStruct);
+
+  SDADC_ChannelConfig(SDADC1, SDADC_Channel_6, SDADC_Conf_0);
+
+//  SDADC_InitStruct.SDADC_Channel = SDADC_Channel_6;
+//  SDADC_InitStruct.SDADC_ContinuousConvMode = DISABLE;
+//  SDADC_InitStruct.SDADC_FastConversionMode = DISABLE;
+//  SDADC_Init(SDADC1, &SDADC_InitStruct);
+
+  SDADC_InitModeCmd(SDADC1, DISABLE);   // Initialization ends
+
+  /* Calibration */
+  SDADC_CalibrationSequenceConfig(SDADC1, SDADC_CalibrationSequence_1);
+  SDADC_StartCalibration(SDADC1);
+
+  SDADCTimeout = 500000;
+  while((SDADC_GetFlagStatus(SDADC1, SDADC_FLAG_EOCAL) == RESET) && (--SDADCTimeout != 0));
+  if(SDADCTimeout == 0)
+  {
+    /* EOCAL flag can not set */
+    return 2;
+  }
+
+  /* SDADC successfully configured */
+  return 0;
+
+
+//  SDADC_VREFSelect(SDADC_VREF_Ext);
+//
+//   /* Insert delay equal to ~5 ms */
+//   for (i=0;i<360000;i++){}
+//
+//   /* Enable PT100_SDADC */
+//   SDADC_Cmd(SDADC1, ENABLE);
+//
+//   /* Enter initialization mode */
+//   SDADC_InitModeCmd(SDADC1, ENABLE);
+//
+//   SDADCTimeout = SDADC_INIT_TIMEOUT;
+//   /* wait for INITRDY flag to be set */
+//   while((SDADC_GetFlagStatus(SDADC1, SDADC_FLAG_INITRDY) == RESET) && (--SDADCTimeout != 0));
+//
+//   if(SDADCTimeout == 0)
+//   {
+//     /* INITRDY flag can not set */
+//     return 1;
+//   }
+//
+//   /* Analog Input configuration conf0: use Single Ended Offset mode with DMA*/
+//   SDADC_AINStructure.SDADC_InputMode = SDADC_InputMode_SEZeroReference;
+//   SDADC_AINStructure.SDADC_Gain = SDADC_Gain_1;
+//   SDADC_AINStructure.SDADC_CommonMode = SDADC_CommonMode_VSSA;
+//   SDADC_AINStructure.SDADC_Offset = 0;
+//   SDADC_AINInit(SDADC1, SDADC_Conf_0, &SDADC_AINStructure);
+//
+//   /* select 8_SDADC channel to use conf0 */
+//   SDADC_ChannelConfig(SDADC1, SDADC_Channel_8, SDADC_Conf_0);
+//    SDADC_ChannelSelect(SDADC1, SDADC_Channel_8);
+//    SDADC_DMAConfig(SDADC1, SDADC_DMATransfer_Regular, ENABLE);
+//
+//   /* Channel3 configuration */
+// //   SDADC_InitStructure.SDADC_Channel = SDADC_Channel_8;
+// //   SDADC_InitStructure.SDADC_ContinuousConvMode = DISABLE;
+// //   SDADC_InitStructure.SDADC_FastConversionMode = DISABLE;
+// //   SDADC_Init(SDADC1, &SDADC_InitStructure);
+//
+//   /* Exit initialization mode */
+//   SDADC_InitModeCmd(SDADC1, DISABLE);
+//
+//    /* NVIC Configuration */
+//   NVIC_InitStructure.NVIC_IRQChannel = SDADC1_IRQn;
+//   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+//   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+//   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+//   NVIC_Init(&NVIC_InitStructure);
+//
+//   /* configure calibration to be performed on conf0 */
+//   SDADC_CalibrationSequenceConfig(SDADC1, SDADC_CalibrationSequence_1);
+//   /* start PT100_SDADC Calibration */
+//    SDADC_ClearFlag(SDADC1, SDADC_FLAG_EOCAL);
+//   SDADC_StartCalibration(SDADC1);
+//
+//   /* Set calibration timeout: 5.12 ms at 6 MHz in a single calibration sequence */
+//   SDADCTimeout = 400000;
+//   /* wait for PT100_SDADC Calibration process to end */
+//   while((SDADC_GetFlagStatus(SDADC1, SDADC_FLAG_EOCAL) == RESET) && (--SDADCTimeout != 0));
+//
+//
+//      //Разрешаем все прерывания !
+//      __set_PRIMASK(0);
+//    __set_BASEPRI(0);
+//
+//
+//   if(SDADCTimeout == 0)
+//   {
+//     /* EOCAL flag can not set */
+//     return 2;
+//   }
+//
+//   /* SDADC successfully configured */
+//   return 0;
+
+}
 
 /* USER CODE END 4 */
 

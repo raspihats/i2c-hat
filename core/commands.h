@@ -38,6 +38,17 @@ enum class Command {
     DO_GET_VALUE                        = 0x35,
     DO_SET_CHANNEL_STATE                = 0x36,
     DO_GET_CHANNEL_STATE                = 0x37,
+
+    AI_GET_CHANNEL_VOLTAGE              = 0x40,
+    AI_GET_CHANNEL_CURRENT              = 0x41,
+    AI_GET_CHANNEL_TEMPERATURE          = 0x42,
+    AI_SET_CHANNEL_SENSOR_TYPE          = 0x43,
+    AI_GET_CHANNEL_SENSOR_TYPE          = 0x44,
+    AI_SET_CHANNEL_GAIN                 = 0x45,
+    AI_GET_CHANNEL_GAIN                 = 0x46,
+    AI_SET_CHANNEL_CALIB                = 0x47,
+    AI_GET_CHANNEL_CALIB                = 0x48,
+
 };
 
 

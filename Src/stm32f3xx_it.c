@@ -179,6 +179,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   
   /* USER CODE BEGIN SysTick_IRQn 1 */
+    Delay_ms_tick();
     I2CHat_tick();
   /* USER CODE END SysTick_IRQn 1 */
 }

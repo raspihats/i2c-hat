@@ -20,7 +20,7 @@ I2CHat::I2CHat() :
     // Register modules
     Register(status_led_);
     Register(communication_watchdog_);
-//    Register(digital_inputs_);
+    Register(analog_inputs_);
     Register(digital_outputs_);
 }
 

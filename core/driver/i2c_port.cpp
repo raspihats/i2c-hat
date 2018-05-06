@@ -125,6 +125,7 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
             }
             else {
                 dummy = port_->RXDR;
+                (void)dummy;
             }
         }
         else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
