@@ -105,7 +105,7 @@ void AnalogInputs::Run() {
         if(oversampling_cnt == SDADC_OVERSAMPLING) {
             accumulator = accumulator / SDADC_OVERSAMPLING;
             tc_voltage = accumulator * (vdda / 65535);
-            tc_voltage = tc_voltage / 32.83;
+            tc_voltage = tc_voltage / 31.008;
             voltages_[0] = tc_voltage;
 
             cjc_temperature = 24;
