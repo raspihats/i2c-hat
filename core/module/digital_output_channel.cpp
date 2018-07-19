@@ -14,13 +14,24 @@ DigitalOutputChannel::DigitalOutputChannel(driver::DigitalOutputPwm pin) :
         pin_(pin) {
 }
 
-bool DigitalOutputChannel::GetState() {
-//    return pin_.GetState();
-    return false;
+void DigitalOutputChannel::Init() {
+    pin_.Init();
 }
 
-void DigitalOutputChannel::SetState(const bool state) {
-//    pin_.SetState(state);
+bool DigitalOutputChannel::SetFrequency(const float value) {
+    return pin_.SetFrequency(value);
+}
+
+float DigitalOutputChannel::GetFrequency() {
+    return pin_.GetFrequency();
+}
+
+bool DigitalOutputChannel::SetDutyCycle(const float value) {
+    return pin_.SetDutyCycle(value);
+}
+
+float DigitalOutputChannel::GetDutyCycle() {
+    return pin_.GetDutyCycle();
 }
 
 } /* namespace module */

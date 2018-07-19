@@ -1,7 +1,9 @@
 # Launch file
 *.launch
 
-*.cproject
-*.mxproject
-*.project
+*.cproject*
+*.mxproject*
+*.project*
 /.settings
+/Debug
+mx.scratch

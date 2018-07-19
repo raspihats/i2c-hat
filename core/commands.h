@@ -40,8 +40,8 @@ enum class Command {
     DO_GET_CHANNEL_STATE                = 0x37,
     DO_SET_PWM_CHANNEL_FREQUENCY        = 0x38,
     DO_GET_PWM_CHANNEL_FREQUENCY        = 0x39,
-    DO_SET_PWM_CHANNEL_DUTY        = 0x38,
-    DO_GET_PWM_CHANNEL_DUTY        = 0x39,
+    DO_SET_PWM_CHANNEL_DUTY_CYCLE       = 0x3A,
+    DO_GET_PWM_CHANNEL_DUTY_CYCLE       = 0x3B,
 };
 
 

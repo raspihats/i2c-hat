@@ -16,8 +16,11 @@ namespace module {
 class DigitalOutputChannel {
 public:
     DigitalOutputChannel(driver::DigitalOutputPwm pin);
-    bool GetState();
-    void SetState(const bool state);
+    void Init();
+    bool SetFrequency(const float value);
+    float GetFrequency();
+    bool SetDutyCycle(const float value);
+    float GetDutyCycle();
 private:
     driver::DigitalOutputPwm pin_;
 };
