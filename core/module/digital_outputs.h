@@ -26,14 +26,8 @@ private:
     uint32_t safety_value_;
 
     bool IsValid(const uint32_t state);
-    void LoadPowerOnValue();
-    bool SetPowerOnValue(const uint32_t value);
-    void LoadSafetyValue();
-    bool SetValue(const uint32_t value);
-    uint32_t GetValue();
-    bool SetSafetyValue(const uint32_t value);
-    bool SetChannelState(const uint8_t index, const bool state);
-    bool GetChannelState(const uint8_t index, bool& state);
+    bool SetFrequency(const float frequency);
+    bool SetDutyCycle(const float duty_cycle);
     bool SetChannelFrequency(const uint8_t index, const float frequency);
     bool GetChannelFrequency(const uint8_t index, float& frequency);
     bool SetChannelDutyCycle(const uint8_t index, const float duty_cycle);

@@ -25,7 +25,6 @@ private:
     TIM_TypeDef*    tim_;
     uint16_t        channel_;
     bool            inverted_;
-    float           frequency_;
     float           duty_cycle_;
     void SetPeriod(const uint16_t value);
     void SetCompare(const uint16_t value);

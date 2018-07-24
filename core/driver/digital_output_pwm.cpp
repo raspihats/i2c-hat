@@ -20,7 +20,6 @@ DigitalOutputPwm::DigitalOutputPwm(TIM_TypeDef* tim, uint16_t channel, const boo
         tim_(tim),
         channel_(channel),
         inverted_(inverted),
-        frequency_(0),
         duty_cycle_(0) {
 //    SetCompare(0);
 }
@@ -82,9 +81,7 @@ bool DigitalOutputPwm::SetFrequency(const float value) {
     float period_threshold;
     static volatile uint16_t prescaler;
     static volatile uint16_t period;
-    if( (1 <= value) and (value <= 480000) ) {
-        frequency_ = value;
-
+    if( (0.1 <= value) and (value <= 480000) ) {
         cycles = (float)CLK_FREQ / value;
         if(cycles >= 10000) {
             period_threshold = 10000;
@@ -101,7 +98,7 @@ bool DigitalOutputPwm::SetFrequency(const float value) {
         prescaler = (uint16_t)truncf(cycles / period_threshold);
         period = (uint16_t)roundf(cycles / prescaler);
         LL_TIM_SetPrescaler(tim_, prescaler - 1);
-        LL_TIM_SetAutoReload(tim_, period - 1);
+        LL_TIM_SetAutoReload(tim_, period);
 
         SetDutyCycle(duty_cycle_);
 
@@ -111,7 +108,7 @@ bool DigitalOutputPwm::SetFrequency(const float value) {
 }
 
 float DigitalOutputPwm::GetFrequency() {
-    return frequency_;
+    return (float)CLK_FREQ / (float)((LL_TIM_GetPrescaler(tim_) + 1) * LL_TIM_GetAutoReload(tim_));
 }
 
 bool DigitalOutputPwm::SetDutyCycle(const float value) {
@@ -119,7 +116,7 @@ bool DigitalOutputPwm::SetDutyCycle(const float value) {
     if( (0 <= value) and (value <= 100) ) {
         duty_cycle_ = value;
         period = LL_TIM_GetAutoReload(tim_);
-        SetCompare(roundf((duty_cycle_ * period) / 100));
+        SetCompare(roundf((value * period) / 100));
         return true;
     }
     return false;
@@ -127,7 +124,7 @@ bool DigitalOutputPwm::SetDutyCycle(const float value) {
 
 
 float DigitalOutputPwm::GetDutyCycle() {
-    return duty_cycle_;
+    return (float)(GetCompare() * 100) / (float)LL_TIM_GetAutoReload(tim_);
 }
 
 } /* namespace driver */
