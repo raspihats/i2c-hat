@@ -25,8 +25,21 @@ DigitalOutputPwm::DigitalOutputPwm(TIM_TypeDef* tim, uint16_t channel, const boo
 }
 
 void DigitalOutputPwm::Init() {
+
+    LL_TIM_CC_EnableChannel(tim_, channel_);
+
+    LL_TIM_OC_SetMode(tim_, channel_, LL_TIM_OCMODE_PWM1);
+
+    if(inverted_) {
+        LL_TIM_OC_ConfigOutput(tim_, channel_, LL_TIM_OCPOLARITY_LOW);
+    }
+    else {
+        LL_TIM_OC_ConfigOutput(tim_, channel_, LL_TIM_OCPOLARITY_HIGH);
+    }
+
     SetFrequency(DEFAULT_PWM_FREQUENCY);
     SetDutyCycle(DEFAULT_PWM_DUTY_CYCLE);
+
     LL_TIM_EnableCounter(tim_);
 }
 
@@ -93,14 +106,19 @@ bool DigitalOutputPwm::SetFrequency(const float value) {
             period_threshold = 100;
         }
 
-        SetCompare(0);  // disable output
-
         prescaler = (uint16_t)truncf(cycles / period_threshold);
         period = (uint16_t)roundf(cycles / prescaler);
+
+        LL_TIM_DisableCounter(tim_);
+        LL_TIM_DisableAllOutputs(tim_);
+
+        LL_TIM_SetCounter(tim_, 0);
         LL_TIM_SetPrescaler(tim_, prescaler - 1);
         LL_TIM_SetAutoReload(tim_, period);
-
         SetDutyCycle(duty_cycle_);
+
+        LL_TIM_EnableAllOutputs(tim_);
+        LL_TIM_EnableCounter(tim_);
 
         return true;
     }
