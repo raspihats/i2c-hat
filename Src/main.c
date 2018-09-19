@@ -1,7 +1,8 @@
+
 /**
   ******************************************************************************
-  * File Name          : main.c
-  * Description        : Main program body
+  * @file           : main.c
+  * @brief          : Main program body
   ******************************************************************************
   ** This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -9,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -35,7 +36,6 @@
   *
   ******************************************************************************
   */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
@@ -70,9 +70,13 @@ static void MX_TIM3_Init(void);
 
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  *
+  * @retval None
+  */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -102,7 +106,6 @@ int main(void)
   MX_IWDG_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
-
   /* USER CODE BEGIN 2 */
   LL_TIM_EnableCounter(TIM1);
   LL_TIM_EnableAllOutputs(TIM1);    // MOE bit, only for Timer1
@@ -136,12 +139,12 @@ int main(void)
   /* USER CODE END 3 */
 
 }
-
 static void LL_Init(void)
 {
   
 
   LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 
   /* System interrupt init*/
   /* SVC_IRQn interrupt configuration */
@@ -153,8 +156,10 @@ static void LL_Init(void)
 
 }
 
-/** System Clock Configuration
-*/
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
 
@@ -243,6 +248,12 @@ static void MX_I2C1_Init(void)
 
     /**I2C Initialization 
     */
+  LL_I2C_DisableOwnAddress2(I2C1);
+
+  LL_I2C_DisableGeneralCall(I2C1);
+
+  LL_I2C_EnableClockStretching(I2C1);
+
   I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
   I2C_InitStruct.Timing = 0x20303E5D;
   I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
@@ -255,12 +266,6 @@ static void MX_I2C1_Init(void)
   LL_I2C_EnableAutoEndMode(I2C1);
 
   LL_I2C_SetOwnAddress2(I2C1, 0, LL_I2C_OWNADDRESS2_NOMASK);
-
-  LL_I2C_DisableOwnAddress2(I2C1);
-
-  LL_I2C_DisableGeneralCall(I2C1);
-
-  LL_I2C_EnableClockStretching(I2C1);
 
 }
 
@@ -562,45 +567,43 @@ static void MX_GPIO_Init(void)
 
 /**
   * @brief  This function is executed in case of error occurrence.
-  * @param  None
+  * @param  file: The file name as string.
+  * @param  line: The line in file as a number.
   * @retval None
   */
-void _Error_Handler(char * file, int line)
+void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {
   }
-  /* USER CODE END Error_Handler_Debug */ 
+  /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
-
+#ifdef  USE_FULL_ASSERT
 /**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t* file, uint32_t line)
-{
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
-
 }
-
-#endif
-
-/**
-  * @}
-  */ 
+#endif /* USE_FULL_ASSERT */
 
 /**
   * @}
-*/ 
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

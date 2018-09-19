@@ -1,7 +1,8 @@
-# Launch file
-*.launch
+/Debug
+.project
+.mxproject
+.cproject
 
-*.cproject
-*.mxproject
-*.project
-/.settings
+*.bak
+*.launch
+*.xml

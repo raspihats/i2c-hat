@@ -2,9 +2,9 @@
 *****************************************************************************
 **
 
-**  File        : stm32_flash.ld
+**  File        : LinkerScript.ld
 **
-**  Abstract    : Linker script for STM32F042K6 Device with
+**  Abstract    : Linker script for STM32F042K6Tx Device with
 **                32KByte FLASH, 6KByte RAM
 **
 **                Set heap size, stack size and stack location according
@@ -14,16 +14,17 @@
 **
 **  Target      : STMicroelectronics STM32
 **
-**  Environment : Atollic TrueSTUDIO(R)
 **
 **  Distribution: The file is distributed as is, without any warranty
 **                of any kind.
 **
-**  (c)Copyright Atollic AB.
+**  (c)Copyright Ac6.
 **  You may use this file as-is or modify it according to the needs of your
-**  project. This file may only be built (assembled or compiled and linked)
-**  using the Atollic TrueSTUDIO(R) product. The use of this file together
-**  with other tools than Atollic TrueSTUDIO(R) is not permitted.
+**  project. Distribution of this file (unmodified or modified) is not
+**  permitted. Ac6 permit registered System Workbench for MCU users the
+**  rights to distribute the assembled, compiled & linked contents of this
+**  file as part of an application binary file, provided that it is built
+**  using the System Workbench for MCU toolchain.
 **
 *****************************************************************************
 */
@@ -41,7 +42,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 6K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 30K  /* 32K but the last 2K are used for EEPROM emulation */
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 32K
 }
 
 /* Define output sections */
@@ -144,12 +145,12 @@ SECTIONS
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
-    . = ALIGN(4);
+    . = ALIGN(8);
   } >RAM
 
   
