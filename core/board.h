@@ -24,14 +24,18 @@
 
 #define DIGITAL_OUTPUT_CHANNEL_COUNT        (8)
 
+#define RELAY_DRIVE_PULL_TIME_MS            (500)
+#define RELAY_DRIVE_FREQUENCY               (25000)
+#define RELAY_DRIVE_HOLD_DUTY_CYCLE         (40)
+
 #define DIGITAL_OUTPUT_CHANNELS \
-        driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH1), \
-        driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH2), \
-        driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH3), \
-        driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH4), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH1), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH2), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH3), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH4)
+        { driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH1) }, \
+        { driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH2) }, \
+        { driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH3) }, \
+        { driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH4) }, \
+        { driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH1) }, \
+        { driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH2) }, \
+        { driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH3) }, \
+        { driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH4) }
 
 #endif /* BOARD_H_ */

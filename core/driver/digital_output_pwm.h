@@ -16,10 +16,10 @@ namespace driver {
 class DigitalOutputPwm {
 public:
     DigitalOutputPwm(TIM_TypeDef* tim, uint16_t channel, const bool inverted=false);
-    void SetPeriod(const uint32_t period);
-    void SetDuty(const uint32_t duty);
-//    bool GetState();
-//    void SetState(bool state);
+    void Init(const float frequency, const float duty);
+    void SetFrequency(const float value);
+    void SetDuty(const float value);
+
 private:
     TIM_TypeDef*    tim_;
     uint16_t        channel_;

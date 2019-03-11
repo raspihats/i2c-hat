@@ -168,6 +168,14 @@ uint32_t DigitalOutputs::GetValue() {
 void DigitalOutputs::Init() {
     bool success;
 
+    for(uint32_t i = 0; i < kChannelCount; i++) {
+        channels_[i].Init(
+            RELAY_DRIVE_PULL_TIME_MS,
+            RELAY_DRIVE_FREQUENCY,
+            RELAY_DRIVE_HOLD_DUTY_CYCLE
+            );
+    }
+
     success = driver::Eeprom::Read(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, power_on_value_);
     if(not success) {
         // TODO Error Handling
@@ -190,7 +198,7 @@ void DigitalOutputs::Run() {
     uint32_t i;
 
     for(i = 0; i < kChannelCount; i++) {
-        channels_[i].Tick();
+        channels_[i].Tick(TASK_PERIOD_MS);
     }
 }
 

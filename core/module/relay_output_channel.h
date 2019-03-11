@@ -15,14 +15,15 @@ namespace module {
 
 class RelayOutputChannel {
 public:
-    RelayOutputChannel(driver::DigitalOutputPwm pin, const uint32_t pull=500, const uint32_t hold=70);
+    RelayOutputChannel(driver::DigitalOutputPwm pin);
     uint32_t pull();
     void set_pull(const uint32_t pull);
     uint32_t hold();
     void set_hold(const uint32_t hold);
     bool GetState();
     void SetState(const bool state);
-    void Tick();
+    void Init(const uint32_t pull_time_ms, const float frequency, const float hold_duty);
+    void Tick(const uint32_t elapsed_ms);
 private:
     enum State {
         ST_OFF,
@@ -30,8 +31,8 @@ private:
         ST_HOLDING,
     };
     driver::DigitalOutputPwm pin_;
-    uint32_t pull_;
-    uint32_t hold_;
+    uint32_t pull_time_ms_;
+    uint32_t hold_duty_;
     volatile uint32_t counter_;
     volatile State state_;
 };
