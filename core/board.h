@@ -11,29 +11,24 @@
 #include "main.h"
 
 #define FW_VERSION_SIZE                     (3)
-#define FW_VERSION_MAJOR                    (2)
-#define FW_VERSION_MINOR                    (1)
+#define FW_VERSION_MAJOR                    (1)
+#define FW_VERSION_MINOR                    (0)
 #define FW_VERSION_PATCH                    (0)
 
 #define BOARD_NAME_SIZE                     (25)
-#define BOARD_NAME                          "DQ10rly I2C-HAT"
+#define BOARD_NAME                          "DQ5rly I2C-HAT"
 
 #define I2C_BASE_ADDRESS                    (0x50)
 
 #define STATUS_LED_PIN                      driver::DigitalOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, true)
 
-#define DIGITAL_OUTPUT_CHANNEL_COUNT        (10)
+#define DIGITAL_OUTPUT_CHANNEL_COUNT        (5)
 
 #define DIGITAL_OUTPUT_CHANNELS \
         driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH1), \
         driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH2), \
         driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH3), \
         driver::DigitalOutputPwm(TIM3, LL_TIM_CHANNEL_CH4), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH1), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH2), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH3), \
-        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH4), \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH1), \
-        driver::DigitalOutputPwm(TIM2, LL_TIM_CHANNEL_CH2)
+        driver::DigitalOutputPwm(TIM1, LL_TIM_CHANNEL_CH1)
 
 #endif /* BOARD_H_ */
