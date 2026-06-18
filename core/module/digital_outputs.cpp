@@ -12,7 +12,8 @@
 #define DEFAULT_POWER_ON_VALUE          (0)
 #define DEFAULT_SAFETY_VALUE            (0)
 
-#define RELAY_PULL_MS                   (100)
+#define RELAY_PULL_MS                   (20)
+#define RELAY_HOLD_DUTY_CYCLE           (40)
 
 namespace i2c_hat {
 namespace module {
@@ -176,7 +177,7 @@ void DigitalOutputs::Init() {
     }
 
     for(i = 0; i < kChannelCount; i++) {
-        channels_[i].Init(RELAY_PULL_MS / TASK_PERIOD_MS, 70);
+        channels_[i].Init(RELAY_PULL_MS / TASK_PERIOD_MS, RELAY_HOLD_DUTY_CYCLE);
     }
 
     LoadPowerOnValue();
