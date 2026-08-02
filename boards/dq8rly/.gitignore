@@ -1,0 +1,8 @@
+/Debug
+.project
+.mxproject
+.cproject
+
+*.bak
+*.launch
+*.xml
