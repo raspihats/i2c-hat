@@ -3,3 +3,7 @@
 *.elf
 *.bin
 *.hex
+
+# Vendor HAL/CMSIS live once in hal/. CubeMX regenerates boards/<name>/Drivers/
+# per board, but the build uses hal/ instead — ignore the regenerated copies.
+boards/*/Drivers/

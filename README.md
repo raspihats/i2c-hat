@@ -17,14 +17,16 @@ core/                  shared, board-agnostic firmware (STM32F0 family)
   i2c_hat.{h,cpp}      the framework; module set comes from each board.h
   commands.h           the I2C command opcodes (host contract)
 
-boards/<name>/         one product; self-contained CubeMX project
+boards/<name>/         one product; the CubeMX app only
   board.h              board identity, pins, channels, and MODULE WIRING
   <Name>.ioc           STM32CubeMX project
   Inc/ Src/            CubeMX-generated app (main.c, it.c, system, ...)
-  Drivers/             vendor HAL/LL/CMSIS for that board
   startup/  *.ld       startup code + linker script
   CMakeLists.txt       calls add_i2c_hat_board() with this board's specifics
 
+hal/                   ST vendor drivers, ONE pinned copy shared by all boards
+  STM32F0xx_HAL_Driver/  LL drivers (Inc + Src)
+  CMSIS/                 CMSIS core + STM32F0 device headers
 middleware/
   eeprom/              ST EEPROM emulation (AN4061, C) — above HAL, shared by all boards
 cmake/                 toolchain file + the add_i2c_hat_board() helper
@@ -32,10 +34,11 @@ tools/                 bump.sh, changelog.sh
 Makefile               thin, hand-readable wrapper over CMake
 ```
 
-Three layers, kept separate on purpose: **`core/`** is our C++ application/framework,
-**`middleware/`** is shared third-party C that sits above HAL (the ST EEPROM
-emulation), and **`boards/<name>/Drivers/`** is per-board vendor HAL/LL/CMSIS
-(CubeMX-managed).
+Four layers, kept separate on purpose:
+**`core/`** — our C++ application / framework;
+**`hal/`** — ST vendor drivers (HAL/LL + CMSIS), pinned to one version, shared by all boards;
+**`middleware/`** — shared third-party C above HAL (the ST EEPROM emulation);
+**`boards/<name>/`** — the per-board CubeMX app (`.ioc`, `Inc/`, `Src/`, startup, linker, `board.h`).
 
 ## The core ↔ board seam
 
@@ -93,20 +96,28 @@ What survives regeneration:
 - **`board.h` is yours** — CubeMX never touches it. It regenerates `main.h` (the
   `STATUS_LED_Pin`, `TIM3`, … pin macros `board.h` references). Keep your pin
   *user-labels* stable and `board.h` keeps matching.
-- **New/updated drivers are picked up automatically** — the build globs
-  `Drivers/**/*.c` and `Src/*.c`, so enabling a peripheral needs no CMake edit.
+- **`board.h` and your linker/startup** stay put (CubeMX rewrites `main.h`, the
+  app in `Src/`, etc.).
 
 Rules to avoid surprises:
 
-1. **Don't set the `.ioc` Toolchain/IDE to "CMake".** That makes CubeMX emit its
+1. **The vendor drivers are shared in `hal/`, not per-board.** CubeMX will still
+   regenerate a `boards/<name>/Drivers/` folder — but the build ignores it (it
+   compiles `hal/`) and it's git-ignored, so just leave it or delete it. To change
+   the pinned driver version, update `hal/` **deliberately** (regenerate one board,
+   copy its refreshed `Drivers/STM32F0xx_HAL_Driver` + `CMSIS` into `hal/`, rebuild
+   all). All boards move together — that's the point.
+2. **If you enable a peripheral whose LL driver isn't in `hal/` yet** (e.g. SPI),
+   copy that `stm32f0xx_ll_*.c/.h` into `hal/` once — every board then has it.
+3. **Don't set the `.ioc` Toolchain/IDE to "CMake".** That makes CubeMX emit its
    own `CMakeLists.txt` into the board folder and clobber ours. Keep it on
    STM32CubeIDE (the old `SW4STM32`/`TrueSTUDIO` ones will offer to migrate —
    accept; it only changes IDE files, which are git-ignored). We build with our
    own CMake regardless of that setting.
-2. **If regen renames the linker/startup file**, update that board's one-line
+4. **If regen renames the linker/startup file**, update that board's one-line
    `LINKER` / `STARTUP` in `boards/<name>/CMakeLists.txt`. On GCC 10, also re-strip
    any GCC11-only `(READONLY)` markers CubeMX may re-add to the linker script.
-3. **If you enable a peripheral that adds a whole module** (e.g. give an input
+5. **If you enable a peripheral that adds a whole module** (e.g. give an input
    board outputs), also flip the `USES_DIGITAL_OUTPUTS` flag in that board's
    `CMakeLists.txt` and add the `BOARD_MODULE_MEMBERS` / `BOARD_REGISTER_MODULES`
    macros in its `board.h`.

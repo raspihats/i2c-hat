@@ -1,9 +1,9 @@
 # add_i2c_hat_board(): defines one board firmware target.
 #
 # Each board's CMakeLists.txt calls this with its hardware specifics and declares
-# which optional core modules it uses. Only the core sources a board actually
-# uses are compiled, so an input-only board never pulls in the PWM driver (and
-# the vendor TIM headers it doesn't ship), and vice-versa.
+# which optional core modules it uses. Only the core sources a board actually uses
+# are compiled. The ST vendor drivers (HAL/LL + CMSIS) are shared once from hal/,
+# and the ST EEPROM emulation from middleware/eeprom/.
 #
 # Usage:
 #   add_i2c_hat_board(
@@ -12,8 +12,6 @@
 #       CPU           cortex-m0
 #       LINKER        STM32F042K6Tx_FLASH.ld
 #       STARTUP       startup/startup_stm32f042x6.s
-#       HAL_INC       Drivers/STM32F0xx_HAL_Driver/Inc
-#       CMSIS_DEVICE  STM32F0xx
 #       USES_DIGITAL_OUTPUTS                 # + USES_DIGITAL_INPUTS / USES_ANALOG_INPUTS
 #       [CORE_DIR     <path>]                # default: <repo>/core
 #       [FPU fpv4-sp-d16 FLOAT_ABI hard]
@@ -23,7 +21,7 @@
 function(add_i2c_hat_board)
     cmake_parse_arguments(B
         "USES_DIGITAL_INPUTS;USES_DIGITAL_OUTPUTS;USES_ANALOG_INPUTS"   # options
-        "NAME;MCU;CPU;FPU;FLOAT_ABI;LINKER;STARTUP;HAL_INC;CMSIS_DEVICE;CORE_DIR"
+        "NAME;MCU;CPU;FPU;FLOAT_ABI;LINKER;STARTUP;CORE_DIR"
         "EXTRA_INCLUDE_DIRS;EXTRA_DEFINES"
         ${ARGN})
 
@@ -74,12 +72,15 @@ function(add_i2c_hat_board)
             ${B_CORE_DIR}/driver/thermocouple/thermocouple.cpp)
     endif()
 
-    # ---- board app + vendor drivers (all present files) ----
-    file(GLOB_RECURSE DRIVER_SRC CONFIGURE_DEPENDS ${BOARD_DIR}/Drivers/*.c)
-    file(GLOB          APP_SRC   CONFIGURE_DEPENDS ${BOARD_DIR}/Src/*.c ${BOARD_DIR}/Src/*.cpp)
+    # ---- board app sources (CubeMX-generated: main.c, it.c, system, ...) ----
+    file(GLOB APP_SRC CONFIGURE_DEPENDS ${BOARD_DIR}/Src/*.c ${BOARD_DIR}/Src/*.cpp)
+
+    # ---- shared vendor HAL/LL: one pinned copy in hal/ for every board.
+    #      The full LL set is compiled; --gc-sections drops what a board doesn't use. ----
+    file(GLOB HAL_SRC CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/hal/STM32F0xx_HAL_Driver/Src/*.c)
 
     add_executable(${B_NAME}
-        ${CORE_SRC} ${MIDDLEWARE_SRC} ${DRIVER_SRC} ${APP_SRC} ${BOARD_DIR}/${B_STARTUP})
+        ${CORE_SRC} ${MIDDLEWARE_SRC} ${HAL_SRC} ${APP_SRC} ${BOARD_DIR}/${B_STARTUP})
 
     # ---- cpu / fpu flags (shared by compile + link) ----
     set(CPU_FLAGS -mcpu=${B_CPU} -mthumb)
@@ -96,9 +97,9 @@ function(add_i2c_hat_board)
         ${BOARD_DIR}                    # board.h
         ${BOARD_DIR}/Inc                # main.h, *_it.h, hal_conf
         ${B_CORE_DIR}                   # shared firmware headers
-        ${BOARD_DIR}/${B_HAL_INC}
-        ${BOARD_DIR}/Drivers/CMSIS/Device/ST/${B_CMSIS_DEVICE}/Include
-        ${BOARD_DIR}/Drivers/CMSIS/Include
+        ${CMAKE_SOURCE_DIR}/hal/STM32F0xx_HAL_Driver/Inc
+        ${CMAKE_SOURCE_DIR}/hal/CMSIS/Device/ST/STM32F0xx/Include
+        ${CMAKE_SOURCE_DIR}/hal/CMSIS/Include
         ${CMAKE_SOURCE_DIR}/middleware/eeprom
         ${B_EXTRA_INCLUDE_DIRS})
 

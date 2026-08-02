@@ -84,12 +84,14 @@ recorded here so the choices are auditable.
 ## What is shared vs per-board
 
 - `core/` is the **STM32F0** shared C++ library used by all the F0 boards.
+- `hal/` is the ST vendor HAL/LL + CMSIS, **one pinned copy shared by all boards**
+  (the full LL set; `--gc-sections` drops what a board doesn't use). CubeMX still
+  regenerates a per-board `boards/<name>/Drivers/`, but the build ignores it and
+  it's git-ignored — see the "Regenerating" section in README.
 - `middleware/eeprom/` is shared third-party C (ST EEPROM emulation, AN4061) that
   sits above HAL. Deduped because it's identical everywhere and *not* CubeMX-managed.
-- `boards/<name>/` is self-contained: CubeMX project, vendor `Drivers/` (HAL/LL/
-  CMSIS), linker, startup, and `board.h`. Vendor drivers are intentionally **not**
-  deduped across boards — CubeMX regenerates them per board and each ships only the
-  peripherals it uses.
+- `boards/<name>/` is now just the CubeMX **app**: `.ioc`, `Inc/`, `Src/`, startup,
+  linker, `board.h`, `CMakeLists.txt`.
 
 ## `core/` file provenance
 
@@ -134,7 +136,12 @@ needs *you*:
 
 1. **Hardware smoke-test each board.** Compiling is not running — flash one of
    each and confirm I2C, the status LED, and the IO behave.
-2. **`board.h` module wiring** for each board was derived from that board's old
+2. **Vendor pack was standardized.** All boards now share `hal/`, taken from
+   `dq5rly`'s newer CMSIS 5 / LL pack. The other four boards were previously on an
+   older pack and compiled clean against the newer one — but a clock/peripheral
+   smoke-test on real hardware is the real confirmation, since `system_stm32f0xx.c`
+   (per board) now runs against newer CMSIS headers.
+3. **`board.h` module wiring** for each board was derived from that board's old
    `i2c_hat` constructor; confirm the module set and the IRQ status bit
    (`di16ac`, `di6acdq6rly`) match the hardware.
 3. **`dq5rly`'s linker script** had GCC11-only `(READONLY)` markers stripped so it
