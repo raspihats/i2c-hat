@@ -70,11 +70,13 @@ Artifacts land in `build/<board>/` as `<board>.elf`, `.bin`, `.hex`.
 VS Code: point the CMake Tools "configure args" at the toolchain file and set
 `-DBOARD=<name>`. STM32CubeIDE can import the folder as a CMake project.
 
-## Regenerating with STM32CubeMX
+## Regenerating with STM32CubeMX / STM32CubeIDE
 
 Each board is still a normal CubeMX project. Open its `.ioc` **from inside its own
 folder** (`boards/<name>/<Name>.ioc`) and Generate Code — CubeMX regenerates in
-place (`Inc/ Src/ Drivers/ startup/` + linker), exactly the existing layout.
+place (`Inc/ Src/ Drivers/ startup/` + linker), exactly the existing layout. This
+is identical whether you use standalone CubeMX or the CubeMX embedded in
+STM32CubeIDE (same generator).
 
 What survives regeneration:
 
@@ -112,6 +114,22 @@ make build BOARD=dq8rly        # confirm it still compiles
 
 `git diff` is the safety net — you'll see immediately if regen touched anything
 outside the `USER CODE` regions.
+
+### Building in STM32CubeIDE
+
+CubeIDE regenerates code exactly as above, but its *native* Eclipse managed build
+only sees files inside the board's own folder — it won't find the shared `core/`
+at the repo root. So either:
+
+- **(recommended)** use CubeIDE just to edit / generate the `.ioc`, and build with
+  our CMake (terminal or VS Code) — one build source of truth; or
+- **import the repo as a CMake project** in CubeIDE (1.15+) and point it at the
+  top-level `CMakeLists.txt` with `-DBOARD=<name>`, so CubeIDE builds through our
+  CMake and picks up `core/`.
+
+Don't add `core/` as a linked folder in a managed Eclipse build — that duplicates
+include paths and flags and drifts from the CMake setup. CubeIDE's generated
+`.project` / `.cproject` / `.mxproject` files are already git-ignored per board.
 
 ## Releasing / versioning
 
