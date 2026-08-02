@@ -48,6 +48,12 @@ function(add_i2c_hat_board)
         ${B_CORE_DIR}/driver/i2c_port.cpp
         ${B_CORE_DIR}/driver/digital_output_pin.cpp)   # status LED
 
+    # ---- shared middleware: ST EEPROM emulation (AN4061), C, sits above HAL.
+    #      Bundled once for all boards; F0-specific (ships the SPL flash driver). ----
+    set(MIDDLEWARE_SRC
+        ${CMAKE_SOURCE_DIR}/middleware/eeprom/eeprom_emulation.c
+        ${CMAKE_SOURCE_DIR}/middleware/eeprom/stm32f0xx_flash.c)
+
     # ---- optional modules, selected per board ----
     if(B_USES_DIGITAL_OUTPUTS)
         list(APPEND CORE_SRC
@@ -73,7 +79,7 @@ function(add_i2c_hat_board)
     file(GLOB          APP_SRC   CONFIGURE_DEPENDS ${BOARD_DIR}/Src/*.c ${BOARD_DIR}/Src/*.cpp)
 
     add_executable(${B_NAME}
-        ${CORE_SRC} ${DRIVER_SRC} ${APP_SRC} ${BOARD_DIR}/${B_STARTUP})
+        ${CORE_SRC} ${MIDDLEWARE_SRC} ${DRIVER_SRC} ${APP_SRC} ${BOARD_DIR}/${B_STARTUP})
 
     # ---- cpu / fpu flags (shared by compile + link) ----
     set(CPU_FLAGS -mcpu=${B_CPU} -mthumb)
@@ -93,7 +99,7 @@ function(add_i2c_hat_board)
         ${BOARD_DIR}/${B_HAL_INC}
         ${BOARD_DIR}/Drivers/CMSIS/Device/ST/${B_CMSIS_DEVICE}/Include
         ${BOARD_DIR}/Drivers/CMSIS/Include
-        ${BOARD_DIR}/Drivers/EEPROM
+        ${CMAKE_SOURCE_DIR}/middleware/eeprom
         ${B_EXTRA_INCLUDE_DIRS})
 
     target_compile_options(${B_NAME} PRIVATE
