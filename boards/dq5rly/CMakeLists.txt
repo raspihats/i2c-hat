@@ -5,7 +5,5 @@ add_i2c_hat_board(
     CPU           cortex-m0
     LINKER        STM32F042K6TX_FLASH.ld
     STARTUP       Startup/startup_stm32f042k6tx.s
-    HAL_INC       Drivers/STM32F0xx_HAL_Driver/Inc
-    CMSIS_DEVICE  STM32F0xx
     USES_DIGITAL_OUTPUTS
 )
