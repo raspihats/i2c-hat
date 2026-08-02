@@ -25,10 +25,17 @@ boards/<name>/         one product; self-contained CubeMX project
   startup/  *.ld       startup code + linker script
   CMakeLists.txt       calls add_i2c_hat_board() with this board's specifics
 
+middleware/
+  eeprom/              ST EEPROM emulation (AN4061, C) — above HAL, shared by all boards
 cmake/                 toolchain file + the add_i2c_hat_board() helper
 tools/                 bump.sh, changelog.sh
 Makefile               thin, hand-readable wrapper over CMake
 ```
+
+Three layers, kept separate on purpose: **`core/`** is our C++ application/framework,
+**`middleware/`** is shared third-party C that sits above HAL (the ST EEPROM
+emulation), and **`boards/<name>/Drivers/`** is per-board vendor HAL/LL/CMSIS
+(CubeMX-managed).
 
 ## The core ↔ board seam
 
@@ -147,7 +154,6 @@ make bump BOARD=di16ac KIND=minor     # one-board change
 | di16ac       | STM32F042C6 | 16 digital inputs (+IRQ) |
 | di6acdq6rly  | STM32F042K6 | 6 digital inputs (+IRQ) + 6 relay outputs |
 | dq5rly       | STM32F042K6 | 5 relay outputs |
-| dq6od        | STM32F042K6 | 6 open-drain outputs |
 | dq8rly       | STM32F042K6 | 8 relay outputs |
 | dq10rly      | STM32F042K6 | 10 relay outputs |
 

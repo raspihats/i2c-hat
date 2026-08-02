@@ -83,10 +83,13 @@ recorded here so the choices are auditable.
 
 ## What is shared vs per-board
 
-- `core/` is the **STM32F0** shared library used by the six F0 boards.
-- `boards/<name>/` is self-contained: CubeMX project, vendor `Drivers/`, linker,
-  startup, and `board.h`. Vendor drivers are intentionally **not** deduped across
-  boards (simpler; they rarely change). Only `core/` is shared.
+- `core/` is the **STM32F0** shared C++ library used by all the F0 boards.
+- `middleware/eeprom/` is shared third-party C (ST EEPROM emulation, AN4061) that
+  sits above HAL. Deduped because it's identical everywhere and *not* CubeMX-managed.
+- `boards/<name>/` is self-contained: CubeMX project, vendor `Drivers/` (HAL/LL/
+  CMSIS), linker, startup, and `board.h`. Vendor drivers are intentionally **not**
+  deduped across boards — CubeMX regenerates them per board and each ships only the
+  peripherals it uses.
 
 ## `core/` file provenance
 
@@ -104,7 +107,8 @@ recorded here so the choices are auditable.
 
 Dropped / changed during the merge:
 
-- Legacy `digital_output_channel` (only on `dq6od`, superseded by `digital_output_pwm`).
+- Legacy `digital_output_channel` (superseded by `digital_output_pwm`; its only
+  user, the `dq6od` board, was later dropped from the monorepo).
 - `ll_utils` (only `dq8rly` had it, needed solely by its superseded PWM driver).
 - `module.h` no longer includes `board.h` or `queue.h` (it used neither); the files
   that actually use board macros / the queue now include them directly. This broke
@@ -124,7 +128,7 @@ when it rejoins.
 
 ## Build status — compile-verified
 
-All 6 F0 boards were **compiled clean** with `arm-none-eabi-gcc 10.3` via
+All 5 F0 boards were **compiled clean** with `arm-none-eabi-gcc 10.3` via
 `make build-all` (flash 10–14 KB each, well within the 32 KB parts). What still
 needs *you*:
 
@@ -133,13 +137,9 @@ needs *you*:
 2. **`board.h` module wiring** for each board was derived from that board's old
    `i2c_hat` constructor; confirm the module set and the IRQ status bit
    (`di16ac`, `di6acdq6rly`) match the hardware.
-4. **`dq6od`** carries some 2018 single-forks of `module.h` / `digital_outputs.h`
-   that were *not* chosen (the canonical versions were). Diff if a `dq6od`-only
-   behaviour goes missing. Its folder also still has stray files
-   (`_FLASH.ld`, duplicate linker scripts, `.pdf/.txt/.xml`) that can be cleaned.
-5. **`dq5rly`'s linker script** had GCC11-only `(READONLY)` markers stripped so it
+3. **`dq5rly`'s linker script** had GCC11-only `(READONLY)` markers stripped so it
    links with GCC10 (the file's own comment recommends this); harmless on GCC11+.
-6. **`dq10rly` vs `di6acdq6rly` `digital_outputs.cpp`** were edited the same day
+4. **`dq10rly` vs `di6acdq6rly` `digital_outputs.cpp`** were edited the same day
    (2026-06); the `dq10rly` version was taken. Diff if they differed functionally.
 
 ## What was intentionally left untouched
