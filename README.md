@@ -70,6 +70,49 @@ Artifacts land in `build/<board>/` as `<board>.elf`, `.bin`, `.hex`.
 VS Code: point the CMake Tools "configure args" at the toolchain file and set
 `-DBOARD=<name>`. STM32CubeIDE can import the folder as a CMake project.
 
+## Regenerating with STM32CubeMX
+
+Each board is still a normal CubeMX project. Open its `.ioc` **from inside its own
+folder** (`boards/<name>/<Name>.ioc`) and Generate Code — CubeMX regenerates in
+place (`Inc/ Src/ Drivers/ startup/` + linker), exactly the existing layout.
+
+What survives regeneration:
+
+- **Your firmware glue.** The `#include "interface.h"` and the `I2CHat_init() /
+  I2CHat_run() / I2CHat_tick()` calls live inside CubeMX `USER CODE` blocks, and
+  `KeepUserCode=true` in every `.ioc`, so regen preserves them.
+- **`board.h` is yours** — CubeMX never touches it. It regenerates `main.h` (the
+  `STATUS_LED_Pin`, `TIM3`, … pin macros `board.h` references). Keep your pin
+  *user-labels* stable and `board.h` keeps matching.
+- **New/updated drivers are picked up automatically** — the build globs
+  `Drivers/**/*.c` and `Src/*.c`, so enabling a peripheral needs no CMake edit.
+
+Rules to avoid surprises:
+
+1. **Don't set the `.ioc` Toolchain/IDE to "CMake".** That makes CubeMX emit its
+   own `CMakeLists.txt` into the board folder and clobber ours. Keep it on
+   STM32CubeIDE (the old `SW4STM32`/`TrueSTUDIO` ones will offer to migrate —
+   accept; it only changes IDE files, which are git-ignored). We build with our
+   own CMake regardless of that setting.
+2. **If regen renames the linker/startup file**, update that board's one-line
+   `LINKER` / `STARTUP` in `boards/<name>/CMakeLists.txt`. On GCC 10, also re-strip
+   any GCC11-only `(READONLY)` markers CubeMX may re-add to the linker script.
+3. **If you enable a peripheral that adds a whole module** (e.g. give an input
+   board outputs), also flip the `USES_DIGITAL_OUTPUTS` flag in that board's
+   `CMakeLists.txt` and add the `BOARD_MODULE_MEMBERS` / `BOARD_REGISTER_MODULES`
+   macros in its `board.h`.
+
+Workflow:
+
+```sh
+# open boards/dq8rly/DQ8rly.ioc in CubeMX -> Generate Code
+git diff boards/dq8rly        # review exactly what regen changed
+make build BOARD=dq8rly        # confirm it still compiles
+```
+
+`git diff` is the safety net — you'll see immediately if regen touched anything
+outside the `USER CODE` regions.
+
 ## Releasing / versioning
 
 See [RELEASING.md](RELEASING.md). Short version:
