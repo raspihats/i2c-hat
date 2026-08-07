@@ -32,6 +32,7 @@ middleware/
 cmake/                 toolchain file + the add_i2c_hat_board() helper
 tools/                 bump.sh, changelog.sh
 Makefile               thin, hand-readable wrapper over CMake
+PROTOCOL.md            the I2C transport contract (framing, transactions, stretching)
 ```
 
 Four layers, kept separate on purpose:
@@ -148,6 +149,12 @@ at the repo root. So either:
 Don't add `core/` as a linked folder in a managed Eclipse build — that duplicates
 include paths and flags and drifts from the CMake setup. CubeIDE's generated
 `.project` / `.cproject` / `.mxproject` files are already git-ignored per board.
+
+## Talking to the boards
+
+The host-facing I2C contract — frame format, the write-then-read transaction
+model, clock-stretching expectations, and Raspberry Pi caveats — is documented
+in [PROTOCOL.md](PROTOCOL.md). The command opcodes are in `core/commands.h`.
 
 ## Releasing / versioning
 
