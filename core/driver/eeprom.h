@@ -28,6 +28,7 @@ public:
     static void Init();
     static bool Read(const uint16_t address, uint32_t& value);
     static bool Write(const uint16_t address, const uint32_t value);
+    static bool Format();
 };
 
 } /* namespace driver */

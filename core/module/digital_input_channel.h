@@ -18,6 +18,9 @@ public:
     DigitalInputChannel(driver::DigitalInputPin pin);
     bool state();
     uint32_t debounce();
+    void set_debounce(const uint32_t value);
+    bool polarity();
+    void set_polarity(const bool value);
     bool rising_edge_irq_enable_flag();
     void set_rising_edge_irq_enable_flag(const bool value);
     bool falling_edge_irq_enable_flag();
@@ -34,6 +37,9 @@ private:
     driver::DigitalInputPin pin_;
     uint32_t debounce_;
     uint32_t integrator_;
+    bool polarity_;     // CiA 401 0x6002: logical = pin XOR polarity, applied
+                        // BEFORE the debounce integrator so state, counters
+                        // and IRQ edges all follow the logical signal
     bool state_;
     bool rising_edge_irq_enable_flag_;
     bool falling_edge_irq_enable_flag_;

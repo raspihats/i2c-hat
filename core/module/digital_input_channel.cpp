@@ -14,6 +14,7 @@ DigitalInputChannel::DigitalInputChannel(driver::DigitalInputPin pin) :
         pin_(pin),
         debounce_(100),
         integrator_(0),
+        polarity_(false),
         state_(false),
         rising_edge_irq_enable_flag_(false),
         falling_edge_irq_enable_flag_(false),
@@ -28,6 +29,25 @@ bool DigitalInputChannel::state() {
 
 uint32_t DigitalInputChannel::debounce() {
     return debounce_;
+}
+
+void DigitalInputChannel::set_debounce(const uint32_t value) {
+    debounce_ = (value > 0) ? value : 1;    // 0 would jam the integrator
+    if(integrator_ > debounce_) {
+        integrator_ = debounce_;
+    }
+}
+
+bool DigitalInputChannel::polarity() {
+    return polarity_;
+}
+
+void DigitalInputChannel::set_polarity(const bool value) {
+    polarity_ = value;
+    // re-seat the debouncer on the new logical level WITHOUT counting an
+    // edge - changing polarity is a commissioning act, not a signal change
+    state_ = (pin_.GetState() != polarity_);
+    integrator_ = state_ ? debounce_ : 0;
 }
 
 bool DigitalInputChannel::rising_edge_irq_enable_flag() {
@@ -74,8 +94,8 @@ void DigitalInputChannel::ResetCounters() {
 }
 
 void DigitalInputChannel::Init(const uint32_t debounce) {
-    debounce_ = debounce;
-    state_ = pin_.GetState();
+    debounce_ = (debounce > 0) ? debounce : 1;
+    state_ = (pin_.GetState() != polarity_);
     if(state_) {
         integrator_ = debounce;
     }
@@ -88,8 +108,9 @@ void DigitalInputChannel::Tick() {
     /* Step 1:
      * Update the integrator based on the input signal. Note that the integrator
      * follows the input, decreasing or increasing towards the limits as
-     * determined by the input state (0 or 1). */
-    if(pin_.GetState()) {
+     * determined by the input state (0 or 1). Polarity (CiA 401 0x6002) is
+     * applied here, so everything downstream is logical. */
+    if(pin_.GetState() != polarity_) {
         if (integrator_ < debounce_) {
             integrator_++;
         }

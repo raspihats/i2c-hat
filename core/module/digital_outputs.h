@@ -27,12 +27,18 @@ private:
     RelayOutputChannel channels_[DIGITAL_OUTPUT_CHANNEL_COUNT];
     uint32_t power_on_value_;
     uint32_t safety_value_;
+    // CiA 401 alignment (ROADMAP.md): 0x6202 / 0x6206
+    uint32_t polarity_;         // per-bit invert, applied at the pin
+    uint32_t safety_mask_;      // per-bit: 1 = load safety value on a CWDT
+                                // trip, 0 = hold last state
 
     bool IsValid(const uint32_t state);
     void LoadPowerOnValue();
     bool SetPowerOnValue(const uint32_t value);
     void LoadSafetyValue();
     bool SetSafetyValue(const uint32_t value);
+    bool SetPolarity(const uint32_t value);
+    bool SetSafetyMask(const uint32_t value);
     bool SetChannelState(const uint8_t index, const bool state);
     bool GetChannelState(const uint8_t index, bool& state);
     bool SetValue(const uint32_t value);

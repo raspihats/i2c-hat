@@ -6,6 +6,7 @@
  */
 
 #include "digital_inputs.h"
+#include "../driver/eeprom.h"
 
 #ifdef DIGITAL_INPUT_CHANNEL_COUNT
 
@@ -26,7 +27,8 @@ DigitalInputs::DigitalInputs() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS),
         kChannelCount(DIGITAL_INPUT_CHANNEL_COUNT),
         channels_{DIGITAL_INPUT_CHANNELS},
-        irq_(IRQ_PIN) {
+        irq_(IRQ_PIN),
+        polarity_(0) {
 
 }
 
@@ -228,15 +230,85 @@ bool DigitalInputs::IsIRQCaptureQueueFull() {
 }
 
 /**
+  * @brief  Sets the input polarity (CiA 401 0x6002), persistent
+  * @param  value: per-bit invert mask, logical = pin XOR polarity
+  * @retval true on success
+  *
+  * The channels re-seat their debouncers on the new logical level without
+  * counting an edge - a commissioning act, not a signal change.
+  */
+bool DigitalInputs::SetPolarity(const uint32_t value) {
+    uint32_t i;
+
+    if(IsValid(value)) {
+        if(driver::Eeprom::Write(EEP_VIRT_ADR_DI_POLARITY, value)) {
+            polarity_ = value;
+            for(i = 0; i < kChannelCount; i++) {
+                channels_[i].set_polarity((polarity_ >> i) & 0x01);
+            }
+            return true;
+        }
+        else {
+            // TODO Error handler
+        }
+    }
+    return false;
+}
+
+/**
+  * @brief  Sets a channel's filter constant (CiA 401 0x6003), persistent
+  * @param  index: channel index
+  * @param  ms: filter time in milliseconds, 1..65535
+  * @retval true on success
+  */
+bool DigitalInputs::SetChannelFilter(const uint8_t index, const uint32_t ms) {
+    if((index < kChannelCount) and (ms >= 1) and (ms <= 65535)) {
+        if(driver::Eeprom::Write(EEP_VIRT_ADR_DI_FILTER(index), ms)) {
+            channels_[index].set_debounce(ms / TASK_PERIOD_MS);
+            return true;
+        }
+        else {
+            // TODO Error handler
+        }
+    }
+    return false;
+}
+
+/**
+  * @brief  Gets a channel's filter constant in milliseconds
+  * @param  index: channel index
+  * @param  ms: reference to store the filter time
+  * @retval true on success
+  */
+bool DigitalInputs::GetChannelFilter(const uint8_t index, uint32_t& ms) {
+    if(index < kChannelCount) {
+        ms = channels_[index].debounce() * TASK_PERIOD_MS;
+        return true;
+    }
+    return false;
+}
+
+/**
   * @brief  Module Init implementation
   * @param  None
   * @retval None
   */
 void DigitalInputs::Init() {
-    uint32_t i;
+    uint32_t i, ms;
 
+    // CiA 401 alignment: persistent input polarity (0x6002) and per-channel
+    // filter constants (0x6003). On boards upgraded from firmware without
+    // these registers the reads fail and the defaults stand (polarity 0,
+    // filter DEBOUNCE_TIME_MS) - the previous behavior.
+    if(not driver::Eeprom::Read(EEP_VIRT_ADR_DI_POLARITY, polarity_)) {
+        polarity_ = 0;
+    }
     for(i = 0; i < kChannelCount; i++) {
-        channels_[i].Init(DEBOUNCE_TIME_MS / TASK_PERIOD_MS);
+        channels_[i].set_polarity((polarity_ >> i) & 0x01);
+        if(not driver::Eeprom::Read(EEP_VIRT_ADR_DI_FILTER(i), ms)) {
+            ms = DEBOUNCE_TIME_MS;
+        }
+        channels_[i].Init(ms / TASK_PERIOD_MS);
     }
 }
 
@@ -321,6 +393,45 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
     IRQReg irq_reg;
 
     switch((Command)request.command()) {
+    case Command::DI_SET_POLARITY:
+        if(request.payload_size() == 4) {
+            BYTES_TO_UINT32(request.payload(), u32_temp);
+            if(SetPolarity(u32_temp)) {
+                response.set_payload((uint8_t*)&polarity_, 4);
+                response_flag = true;
+            }
+        }
+        break;
+    case Command::DI_GET_POLARITY:
+        if(request.payload_size() == 0) {
+            response.set_payload((uint8_t*)&polarity_, 4);
+            response_flag = true;
+        }
+        break;
+    case Command::DI_SET_CHANNEL_FILTER:
+        if(request.payload_size() == 5) {
+            index = request.payload()[0];
+            BYTES_TO_UINT32(request.payload() + 1, u32_temp);
+            if(SetChannelFilter(index, u32_temp)) {
+                response.set_payload(request.payload(), 5);
+                response_flag = true;
+            }
+        }
+        break;
+    case Command::DI_GET_CHANNEL_FILTER:
+        if(request.payload_size() == 1) {
+            index = request.payload()[0];
+            if(GetChannelFilter(index, u32_temp)) {
+                buffer[0] = index;
+                buffer[1] = (uint8_t)u32_temp;
+                buffer[2] = (uint8_t)(u32_temp >> 8);
+                buffer[3] = (uint8_t)(u32_temp >> 16);
+                buffer[4] = (uint8_t)(u32_temp >> 24);
+                response.set_payload(buffer, 5);
+                response_flag = true;
+            }
+        }
+        break;
     case Command::DI_GET_VALUE:
         if(request.payload_size() == 0) {
             u32_temp = GetValue();

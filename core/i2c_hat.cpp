@@ -141,6 +141,21 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
                 NVIC_SystemReset();
             }
             break;
+        case Command::RESTORE_FACTORY_DEFAULTS:
+            // CiA 301 0x1011: acts only on the "load" signature, so a stray
+            // write can never wipe a commissioning. Formats the EEPROM and
+            // resets; every persistent register falls back to its default.
+            // Like RESET, no response is sent.
+            if(request.payload_size() == 4
+                    and request.payload()[0] == 'l'
+                    and request.payload()[1] == 'o'
+                    and request.payload()[2] == 'a'
+                    and request.payload()[3] == 'd') {
+                if(driver::Eeprom::Format()) {
+                    NVIC_SystemReset();
+                }
+            }
+            break;
         default:
             response_flag = false;
             break;

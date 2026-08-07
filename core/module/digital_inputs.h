@@ -37,8 +37,14 @@ private:
     DigitalInputChannel channels_[DIGITAL_INPUT_CHANNEL_COUNT];
     driver::DigitalOutputPin irq_;
     utils::Queue<128> irq_capture_queue_; // use only powers of 2 for queue size
+    // CiA 401 alignment (ROADMAP.md): 0x6002; per-channel filter times
+    // (0x6003) live in the channels themselves
+    uint32_t polarity_;
 
     bool IsValid(const uint32_t value);
+    bool SetPolarity(const uint32_t value);
+    bool SetChannelFilter(const uint8_t index, const uint32_t ms);
+    bool GetChannelFilter(const uint8_t index, uint32_t& ms);
     bool GetChannelState(const uint32_t index, bool& state);
     uint32_t GetValue();
     bool GetCounter(const uint32_t index, const CounterTypes type, uint32_t& value);
