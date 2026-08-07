@@ -56,13 +56,31 @@ The rules, exactly as the firmware implements them:
    mandatory SMBus command byte; the firmware throws it away and serves the
    staged response. Send `0xFF` as that byte. This is why the smbus2 path
    works unchanged.
-3. Consequently, **a real command sent inside a combined transfer is silently
-   dropped**. What the read part then returns depends on whether a staged
-   response is still unconsumed: normally there is none (responses are consumed
-   by reading them, rule 5), so the read yields `0xEE` filler — a standalone
-   `write-cmd + Sr + read` transaction always comes back as `0xEE`. Only if the
-   previous response was never read does it come back instead. Either way the
-   frame check catches it (bad CRC / wrong ID): don't send commands combined.
+3. **Atomic combined commands** (firmware ≥ the versions below): a combined
+   transfer whose write part is a **complete valid frame** (≥ 4 bytes, CRC ok)
+   is executed, and the read part returns its response — one
+   `write + Sr + read` transaction, no gap for anything to interleave into.
+   The discriminator is frame validity itself: the SMBus dummy byte of rule 2
+   is a single byte and can never form a valid frame, so both behaviors
+   coexist and the smbus2 path is unchanged on the wire.
+
+   | Board | Atomic combined since |
+   |---|---|
+   | di16ac | 2.2.0 |
+   | di6acdq6rly | 2.2.0 |
+   | dq5rly | 1.1.0 |
+   | dq8rly | 2.1.0 |
+   | dq10rly | 2.2.0 |
+
+   On **older firmware** a real command sent combined is silently dropped, and
+   the read normally returns `0xEE` filler (a previous response only appears
+   if it was never read). The frame check catches either (bad CRC / wrong
+   ID) — on old firmware, send commands only in STOP-terminated writes.
+
+   Caveat for combined EEPROM SETs: the response read is stretched for the
+   flash duration; a (rare) page transfer exceeds the Pi's 35 ms CLKT, so the
+   master aborts *after* the command executed. The retry is safe — the value
+   is already stored, so it acks without touching flash.
 4. **No delay is needed between the write and the read.** The firmware
    finalizes the command even when the read arrives back-to-back with the
    write's STOP; the pending read is paced by hardware clock stretching until
