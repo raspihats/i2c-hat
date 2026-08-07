@@ -133,12 +133,23 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
                 (void)port_->RXDR;
             }
         }
-        else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
-            state_ = ST_WAIT_ADR;
-        }
         else if(LL_I2C_IsActiveFlag_STOP(port_)) {
+            // Checked before ADDR: a fast master starts the response read
+            // within microseconds of the write's STOP, so both flags can be
+            // pending by the time this loop looks. STOP must win, or the
+            // completed command is dropped and the read is served a stale
+            // response. The pending read keeps SCL stretched in hardware
+            // (ADDR stays uncleared) while the command is processed - the
+            // master needs no delay between write and read.
             LL_I2C_ClearFlag_STOP(port_);
             receive_size = rx_count;
+            state_ = ST_WAIT_ADR;
+        }
+        else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
+            // ADDR without STOP: a repeated-START combined transfer. Its
+            // write part is discarded by design - it is the SMBus command/
+            // dummy byte of read_i2c_block_data (see raspihats lib), not a
+            // framed command. Commands must arrive in STOP-terminated writes.
             state_ = ST_WAIT_ADR;
         }
         break;
