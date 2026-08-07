@@ -32,8 +32,8 @@ the canonical 8-bit objects, since the HATs move 32-bit masks regardless.
 | --- | --- | --- | --- |
 | `0x6200` | Write output | `DQ_SET_ALL_CHANNEL_STATES` 0x34 (bulk), single-channel 0x36/0x37 (= the `0x6220` bit-access form), read-back 0x35 | **adopted** |
 | `0x6207` | Error value output | `DQ_SET/GET_SAFETY_VALUE` 0x32/0x33, loaded by the board on a CWDT trip | **adopted** |
-| `0x6206` | Error mode output | `safety_mask` - per bit: 1 = load the error value on a trip, 0 = hold last state | **planned** (next firmware increment) |
-| `0x6202` | Change polarity output | persistent per-bit invert register, applied by firmware between process value and pin | **decided 2026-08-08** |
+| `0x6206` | Error mode output | `DO_SET/GET_SAFETY_MASK` 0x3A/0x3B - per bit: 1 = load the error value on a trip, 0 = hold last state | **adopted** (1.2.0/2.2.0/2.3.0 series) |
+| `0x6202` | Change polarity output | `DO_SET/GET_POLARITY` 0x38/0x39 - persistent per-bit invert, applied by firmware between process value and pin | **adopted** (1.2.0/2.2.0/2.3.0 series) |
 | `0x6208` | Filter mask output | per-bit "which bits does a bulk write affect" | proposed (drawer) |
 | - | (no CiA analogue) | `DQ_SET/GET_POWER_ON_VALUE` 0x30/0x31, applied at power-up | **adopted** |
 
@@ -67,8 +67,8 @@ Notes per object:
 | CiA 401 | name | I2C-HAT | status |
 | --- | --- | --- | --- |
 | `0x6000` | Read input | `DI_GET_ALL_CHANNEL_STATES` 0x20 (bulk) | **adopted** |
-| `0x6003` | Filter constant input | persistent input filter/debounce time | **proposed - ranked first** |
-| `0x6002` | Change polarity input | persistent per-bit invert, process value = pin XOR polarity | proposed (pairs with `0x6202`) |
+| `0x6003` | Filter constant input | `DI_SET/GET_CHANNEL_FILTER` 0x2A/0x2B - persistent per-channel filter time in ms | **adopted** (2.3.0 series) |
+| `0x6002` | Change polarity input | `DI_SET/GET_POLARITY` 0x2C/0x2D - persistent per-bit invert, applied before the debouncer | **adopted** (2.3.0 series) |
 | `0x6005` | Global interrupt enable | with the three masks below: event-driven inputs over the HAT's IRQ line | proposed |
 | `0x6006` | Interrupt mask, any change | " | proposed |
 | `0x6007` | Interrupt mask, low-to-high | " | proposed |
@@ -100,7 +100,7 @@ Notes per object:
 | CiA | name | I2C-HAT | status |
 | --- | --- | --- | --- |
 | `0x1001` + EMCY | Error register | `GET_STATUS_WORD` 0x12: PORRST 0x01, SFTRST 0x02, IWDGRST 0x04, CWDT tripped 0x08; cleared when read | **adopted** |
-| `0x1011` | Restore default parameters | factory-reset opcode for the whole persistent block | **proposed - ranked second** |
+| `0x1011` | Restore default parameters | `RESTORE_FACTORY_DEFAULTS` 0x18, acts only on the "load" signature; formats the EEPROM and resets | **adopted** (1.2.0/2.2.0/2.3.0 series) |
 | `0x1020` | Verify configuration | a stored config signature; steady-state reconcile becomes one read | proposed |
 | `0x1010` | Store parameters | not needed - each SET persists immediately (different model, settled) | n/a |
 
@@ -127,12 +127,10 @@ Notes per object:
 
 | rank | piece | why |
 | --- | --- | --- |
-| in flight | `0x6206` safety mask + `0x6202` polarity | decided; sensibly ship in one firmware release |
-| 1 | `0x6003` input filter constant | correctness on AC inputs, not a tuning nicety |
-| 2 | `0x1011` restore defaults | the pre-armed-HAT scenario has already happened |
-| 3 | `0x6005`-`0x6008` + IRQ line | biggest latency win, biggest joint effort |
-| 4 | `0x1020` config signature | pays off more with every register added |
-| 5 | `0x6208` output write mask | drawer, until shared-board outputs are real |
+| shipped | `0x6206` + `0x6202` + `0x6003` + `0x6002` + `0x1011` | the 1.2.0 / 2.2.0 / 2.3.0 firmware series |
+| 1 | `0x6005`-`0x6008` + IRQ line | biggest latency win, biggest joint effort |
+| 2 | `0x1020` config signature | pays off more with every register added |
+| 3 | `0x6208` output write mask | drawer, until shared-board outputs are real |
 
 The analog half of CiA 401 (`0x6401`/`0x6411` values, scaling, limit
 interrupts) is the same exercise for the day an AI/AQ board joins the
