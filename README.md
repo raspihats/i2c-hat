@@ -156,6 +156,10 @@ The host-facing I2C contract — frame format, the write-then-read transaction
 model, clock-stretching expectations, and Raspberry Pi caveats — is documented
 in [PROTOCOL.md](PROTOCOL.md). The command opcodes are in `core/commands.h`.
 
+Where the protocol is heading: [ROADMAP.md](ROADMAP.md) maps CiA 401 (the
+CANopen device profile for generic I/O modules) onto the I2C-HATs — adopted,
+decided, and proposed features in one prioritized list.
+
 ## Releasing / versioning
 
 See [RELEASING.md](RELEASING.md). Short version:
