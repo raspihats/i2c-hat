@@ -71,13 +71,13 @@ uint32_t I2CPort::transmit_buffer_size() {
 void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
     static uint32_t rx_count;
     static uint32_t tx_count;
-    static uint32_t dummy;
     static uint32_t dir_count = 0;
     static uint32_t arlo_cnt = 0;
     static bool release_clock_stretch_flag;
 
-    if( LL_I2C_IsActiveFlag_OVR(port_)
-            or LL_I2C_IsActiveFlag_BERR(port_)
+    // No OVR check: with clock stretching enabled (NOSTRETCH=0) the peripheral
+    // stretches SCL instead of overrunning, so OVR can never fire (RM0091).
+    if( LL_I2C_IsActiveFlag_BERR(port_)
             or LL_I2C_IsActiveFlag_ARLO(port_) ) {
         state_ = ST_INIT;
     }
@@ -96,6 +96,10 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
         tx_count = 0;
         // clear all flags by disabling I2C port
         LL_I2C_Disable(port_);
+        // PE must stay low >= 3 APB cycles for the internal reset to take
+        // effect (RM0091); the readback enforces the hold time
+        while(LL_I2C_IsEnabled(port_)) {
+        }
         LL_I2C_Enable(port_);
         release_clock_stretch_flag = false;
         state_ = ST_WAIT_ADR;
@@ -124,7 +128,9 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
                 rx_buffer_[rx_count++] = port_->RXDR;
             }
             else {
-                dummy = port_->RXDR;
+                // buffer full: drain RXDR so the byte doesn't stretch the bus;
+                // volatile read, not elided despite the discarded value
+                (void)port_->RXDR;
             }
         }
         else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
@@ -133,7 +139,7 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
         else if(LL_I2C_IsActiveFlag_STOP(port_)) {
             LL_I2C_ClearFlag_STOP(port_);
             receive_size = rx_count;
-            state_ = ST_WAIT_ADR;;
+            state_ = ST_WAIT_ADR;
         }
         break;
 
@@ -169,11 +175,13 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
             }
         }
         else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
-            LL_I2C_ClearFlag_TXE(port_); // purge tx reg
+            LL_I2C_ClearFlag_TXE(port_);  // purge tx reg
+            LL_I2C_ClearFlag_NACK(port_); // master NACKs the last read byte by design
             state_ = ST_WAIT_ADR;
         }
         else if(LL_I2C_IsActiveFlag_STOP(port_)) {
-            LL_I2C_ClearFlag_TXE(port_); // purge tx reg
+            LL_I2C_ClearFlag_TXE(port_);  // purge tx reg
+            LL_I2C_ClearFlag_NACK(port_); // master NACKs the last read byte by design
             LL_I2C_ClearFlag_STOP(port_);
             state_ = ST_WAIT_ADR;
         }
