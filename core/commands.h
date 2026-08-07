@@ -18,6 +18,10 @@ enum class Command {
     CWDT_GET_PERIOD                     = 0x15,
     IRQ_GET_REG                         = 0x16,
     IRQ_SET_REG                         = 0x17,
+    // CiA 301 0x1011: acts only with the "load" signature (payload
+    // 'l','o','a','d'); formats the EEPROM pages and resets - every
+    // persistent register falls back to its factory default
+    RESTORE_FACTORY_DEFAULTS            = 0x18,
 
     DI_GET_VALUE                        = 0x20,
     DI_GET_CHANNEL_STATE                = 0x21,
@@ -29,6 +33,12 @@ enum class Command {
     DI_RESET_ENCODER                    = 0x27,
     DI_RESET_ALL_ENCODERS               = 0x28,
     DI_GET_ENCODERS_STATUS              = 0x29,
+    // CiA 401 alignment (see ROADMAP.md): 0x6003 filter constant input
+    // (per-channel, ms), 0x6002 change polarity input
+    DI_SET_CHANNEL_FILTER               = 0x2A,
+    DI_GET_CHANNEL_FILTER               = 0x2B,
+    DI_SET_POLARITY                     = 0x2C,
+    DI_GET_POLARITY                     = 0x2D,
 
     DO_SET_POWER_ON_VALUE               = 0x30,
     DO_GET_POWER_ON_VALUE               = 0x31,
@@ -38,6 +48,12 @@ enum class Command {
     DO_GET_VALUE                        = 0x35,
     DO_SET_CHANNEL_STATE                = 0x36,
     DO_GET_CHANNEL_STATE                = 0x37,
+    // CiA 401 alignment (see ROADMAP.md): 0x6202 change polarity output,
+    // 0x6206 error mode output (per-channel safety mask)
+    DO_SET_POLARITY                     = 0x38,
+    DO_GET_POLARITY                     = 0x39,
+    DO_SET_SAFETY_MASK                  = 0x3A,
+    DO_GET_SAFETY_MASK                  = 0x3B,
 
     AI_GET_CHANNEL_VOLTAGE              = 0x40,
     AI_GET_CHANNEL_CURRENT              = 0x41,

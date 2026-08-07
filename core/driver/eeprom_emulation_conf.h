@@ -32,6 +32,23 @@ enum {
     EEP_VIRT_ADR_DO_POWER_ON_VALUE_HIGH,
     EEP_VIRT_ADR_DO_SAFETY_VALUE_LOW,
     EEP_VIRT_ADR_DO_SAFETY_VALUE_HIGH,
+    /* CiA 401 alignment (ROADMAP.md): 0x6202 polarity, 0x6206 safety mask.
+       Appended per the rule above; on boards upgraded from older firmware
+       these read back as not-found and the module falls back to defaults
+       (polarity 0, mask all channels) - the pre-mask behavior. */
+    EEP_VIRT_ADR_DO_POLARITY_LOW,
+    EEP_VIRT_ADR_DO_POLARITY_HIGH,
+    EEP_VIRT_ADR_DO_SAFETY_MASK_LOW,
+    EEP_VIRT_ADR_DO_SAFETY_MASK_HIGH,
+#endif
+#ifdef DIGITAL_INPUT_CHANNEL_COUNT
+    /* CiA 401 alignment (ROADMAP.md): 0x6002 input polarity, 0x6003 filter
+       constant - one u32 (ms) per input channel, allocated as a block. */
+    EEP_VIRT_ADR_DI_POLARITY_LOW,
+    EEP_VIRT_ADR_DI_POLARITY_HIGH,
+    EEP_VIRT_ADR_DI_FILTER_BASE,
+    EEP_VIRT_ADR_DI_FILTER_LAST = EEP_VIRT_ADR_DI_FILTER_BASE
+                                  + 2 * DIGITAL_INPUT_CHANNEL_COUNT - 1,
 #endif
     EEP_VIRT_ADR_COUNT,
 };
@@ -40,6 +57,12 @@ enum {
 #ifdef DIGITAL_OUTPUT_CHANNEL_COUNT
 #define EEP_VIRT_ADR_DO_POWER_ON_VALUE      EEP_VIRT_ADR_DO_POWER_ON_VALUE_LOW
 #define EEP_VIRT_ADR_DO_SAFETY_VALUE        EEP_VIRT_ADR_DO_SAFETY_VALUE_LOW
+#define EEP_VIRT_ADR_DO_POLARITY            EEP_VIRT_ADR_DO_POLARITY_LOW
+#define EEP_VIRT_ADR_DO_SAFETY_MASK         EEP_VIRT_ADR_DO_SAFETY_MASK_LOW
+#endif
+#ifdef DIGITAL_INPUT_CHANNEL_COUNT
+#define EEP_VIRT_ADR_DI_POLARITY            EEP_VIRT_ADR_DI_POLARITY_LOW
+#define EEP_VIRT_ADR_DI_FILTER(channel)     (EEP_VIRT_ADR_DI_FILTER_BASE + 2 * (channel))
 #endif
 
 /* How many entries of VirtAddVarTab (core/driver/eeprom.cpp) the middleware walks

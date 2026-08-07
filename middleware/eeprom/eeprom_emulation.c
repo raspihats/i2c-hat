@@ -45,7 +45,7 @@ extern uint16_t VirtAddVarTab[];
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
-static FLASH_Status EE_Format(void);
+FLASH_Status EE_Format(void);
 static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress,
         uint16_t Data);
 static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data);
@@ -324,7 +324,7 @@ uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data) {
  * @retval Status of the last operation (Flash write or erase) done during
  *         EEPROM formating
  */
-static FLASH_Status EE_Format(void) {
+FLASH_Status EE_Format(void) {
     FLASH_Status FlashStatus = FLASH_COMPLETE;
 
     /* Erase Page0 */

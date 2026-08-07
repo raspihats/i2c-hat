@@ -35,6 +35,17 @@ bool Eeprom::Read(const uint16_t virtAddress, uint32_t& value) {
     return false;
 }
 
+/**
+  * @brief  Erases the whole emulated EEPROM (both pages), CiA 301 0x1011.
+  *         Every stored variable is gone; on the next boot each module's
+  *         Read() fails and its factory default stands. Blocks for two page
+  *         erases (~40-80 ms) - the caller is expected to reset right after.
+  * @retval true on success
+  */
+bool Eeprom::Format() {
+    return EE_Format() == FLASH_COMPLETE;
+}
+
 bool Eeprom::Write(const uint16_t virtAddress, const uint32_t value) {
     uint16_t status1, status2;
     uint32_t current;
