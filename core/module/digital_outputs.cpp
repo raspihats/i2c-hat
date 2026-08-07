@@ -59,7 +59,7 @@ void DigitalOutputs::LoadPowerOnValue() {
   */
 bool DigitalOutputs::SetPowerOnValue(const uint32_t value) {
     if(IsValid(value)) {
-        if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, value)) {
+        if(driver::Eeprom::Write(EEP_VIRT_ADR_DO_POWER_ON_VALUE, value)) {
             power_on_value_ = value;
             return true;
         }
@@ -86,7 +86,7 @@ void DigitalOutputs::LoadSafetyValue() {
   */
 bool DigitalOutputs::SetSafetyValue(const uint32_t value) {
     if(IsValid(value)) {
-        if(driver::Eeprom::Write(driver::EEP_VIRT_ADR_DO_SAFETY_VALUE, value)) {
+        if(driver::Eeprom::Write(EEP_VIRT_ADR_DO_SAFETY_VALUE, value)) {
             safety_value_ = value;
             return true;
         }
@@ -168,12 +168,12 @@ void DigitalOutputs::Init() {
     bool success;
     uint32_t i;
 
-    success = driver::Eeprom::Read(driver::EEP_VIRT_ADR_DO_POWER_ON_VALUE, power_on_value_);
+    success = driver::Eeprom::Read(EEP_VIRT_ADR_DO_POWER_ON_VALUE, power_on_value_);
     if(not success) {
         // TODO Error Handling
     }
 
-    success = driver::Eeprom::Read(driver::EEP_VIRT_ADR_DO_SAFETY_VALUE, safety_value_);
+    success = driver::Eeprom::Read(EEP_VIRT_ADR_DO_SAFETY_VALUE, safety_value_);
     if(not success) {
         // TODO Error Handling
     }
