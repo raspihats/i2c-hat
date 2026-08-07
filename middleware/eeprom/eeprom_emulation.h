@@ -71,8 +71,11 @@
 /* Page full define */
 #define PAGE_FULL               ((uint8_t)0x80)
 
-/* Variables' number */
-#define EEP_NB_OF_VAR           ((uint8_t)0x02)
+/* Variables' number: EEP_NB_OF_VAR, how many entries of the user's VirtAddVarTab
+   EE_Init() and EE_PageTransfer() walk. The application owns that table, so it
+   owns its length too — both come from the config header below, which the
+   application supplies on the include path. */
+#include "eeprom_emulation_conf.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

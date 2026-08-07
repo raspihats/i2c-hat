@@ -8,26 +8,20 @@
 #ifndef DRIVER_EEPROM_H_
 #define DRIVER_EEPROM_H_
 
+// Included before the extern "C" block below: eeprom_emulation.h pulls in board.h
+// too, and board.h carries C++ module headers that must not get C linkage.
+#include "board.h"
+
 extern "C" {
 #include "eeprom_emulation.h"
 }
 
+// The EEP_VIRT_ADR_* layout lives in eeprom_emulation_conf.h, pulled in above via
+// eeprom_emulation.h. It sits at file scope so the middleware's C sources can read
+// the same definitions.
+
 namespace i2c_hat {
 namespace driver {
-
-enum {
-    EEP_VIRT_ADR_CWDT_PERIOD_LOW,
-    EEP_VIRT_ADR_CWDT_PERIOD_HIGH,
-    EEP_VIRT_ADR_DO_POWER_ON_VALUE_LOW,
-    EEP_VIRT_ADR_DO_POWER_ON_VALUE_HIGH,
-    EEP_VIRT_ADR_DO_SAFETY_VALUE_LOW,
-    EEP_VIRT_ADR_DO_SAFETY_VALUE_HIGH,
-    EEP_VIRT_ADR_COUNT,
-};
-
-#define EEP_VIRT_ADR_CWDT_PERIOD            EEP_VIRT_ADR_CWDT_PERIOD_LOW
-#define EEP_VIRT_ADR_DO_POWER_ON_VALUE      EEP_VIRT_ADR_DO_POWER_ON_VALUE_LOW
-#define EEP_VIRT_ADR_DO_SAFETY_VALUE        EEP_VIRT_ADR_DO_SAFETY_VALUE_LOW
 
 class Eeprom {
 public:

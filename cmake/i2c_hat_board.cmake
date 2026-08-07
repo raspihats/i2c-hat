@@ -97,6 +97,7 @@ function(add_i2c_hat_board)
         ${BOARD_DIR}                    # board.h
         ${BOARD_DIR}/Inc                # main.h, *_it.h, hal_conf
         ${B_CORE_DIR}                   # shared firmware headers
+        ${B_CORE_DIR}/driver            # eeprom_emulation_conf.h, by bare name
         ${CMAKE_SOURCE_DIR}/hal/STM32F0xx_HAL_Driver/Inc
         ${CMAKE_SOURCE_DIR}/hal/CMSIS/Device/ST/STM32F0xx/Include
         ${CMAKE_SOURCE_DIR}/hal/CMSIS/Include
