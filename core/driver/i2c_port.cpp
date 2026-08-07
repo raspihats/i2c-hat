@@ -173,10 +173,16 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
             state_ = ST_WAIT_ADR;
         }
         else if(LL_I2C_IsActiveFlag_ADDR(port_)) {
-            // ADDR without STOP: a repeated-START combined transfer. Its
-            // write part is discarded by design - it is the SMBus command/
-            // dummy byte of read_i2c_block_data (see raspihats lib), not a
-            // framed command. Commands must arrive in STOP-terminated writes.
+            // ADDR without STOP: a repeated-START combined transfer. Finalize
+            // this write segment as a command attempt - Frame::Decode is the
+            // discriminator. A valid frame (>= 4 bytes, CRC ok) is processed
+            // in this same Run() pass, under the hardware ADDR stretch, so
+            // its response is staged before the read segment is released:
+            // an atomic write+Sr+read transaction. The SMBus command/dummy
+            // byte of read_i2c_block_data (always a single byte, never a
+            // valid frame) is rejected by Decode and thereby discarded, so
+            // the smbus2 combined-read path is unchanged on the wire.
+            receive_size = rx_count;
             state_ = ST_WAIT_ADR;
         }
         break;
