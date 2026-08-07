@@ -37,6 +37,16 @@ bool Eeprom::Read(const uint16_t virtAddress, uint32_t& value) {
 
 bool Eeprom::Write(const uint16_t virtAddress, const uint32_t value) {
     uint16_t status1, status2;
+    uint32_t current;
+
+    // Skip the flash program entirely when the stored value already matches --
+    // controllers re-send the same configuration on every start, and each
+    // redundant write burns a page slot, eventually forcing a ~20-40 ms page
+    // transfer that stalls the core (and stretches SCL) mid-transaction.
+    // A failed read (first ever write, torn value) falls through to the write.
+    if(Read(virtAddress, current) and (current == value)) {
+        return true;
+    }
 
     status1 = EE_WriteVariable(virtAddress, (uint16_t)value);
     status2 = EE_WriteVariable(virtAddress + 1, (uint16_t)(value >> 16));
