@@ -10,3 +10,6 @@ boards/*/Drivers/
 
 # Working notes, not part of the deliverable (yet).
 analysis.md
+
+# Claude Code local settings
+.claude/settings.local.json*
