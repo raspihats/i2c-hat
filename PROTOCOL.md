@@ -62,10 +62,20 @@ The rules, exactly as the firmware implements them:
 4. **No delay is needed between the write and the read.** The firmware
    finalizes the command even when the read arrives back-to-back with the
    write's STOP; the pending read is paced by hardware clock stretching until
-   the fresh response is staged. *(Firmware built from this tree at or after
-   commit `e0016b4`. Older shipped firmware has a race that drops the command
-   when the read follows within ~10 µs — hosts talking to old firmware should
-   keep a ~1 ms gap between write and read.)*
+   the fresh response is staged. This holds from the following firmware
+   versions (query with `GET_FIRMWARE_VERSION`, `0x11`):
+
+   | Board | No-delay since |
+   |---|---|
+   | di16ac | 2.1.3 |
+   | di6acdq6rly | 2.1.4 |
+   | dq5rly | 1.0.1 |
+   | dq8rly | 2.0.2 |
+   | dq10rly | 2.1.2 |
+
+   Older firmware has a race that drops the command when the read follows
+   within ~10 µs — hosts talking to older versions should keep a ~1 ms gap
+   between write and read.
 5. **Over-reading yields `0xEE` filler bytes.** The response is consumed by
    reading it: a second read without a new command returns `0xEE` padding
    (which fails CRC — by design).
