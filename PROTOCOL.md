@@ -57,8 +57,12 @@ The rules, exactly as the firmware implements them:
    staged response. Send `0xFF` as that byte. This is why the smbus2 path
    works unchanged.
 3. Consequently, **a real command sent inside a combined transfer is silently
-   dropped** and the read returns the *previous* response. Don't do it; if you
-   do it by accident, the ID/CMD echo check catches it.
+   dropped**. What the read part then returns depends on whether a staged
+   response is still unconsumed: normally there is none (responses are consumed
+   by reading them, rule 5), so the read yields `0xEE` filler — a standalone
+   `write-cmd + Sr + read` transaction always comes back as `0xEE`. Only if the
+   previous response was never read does it come back instead. Either way the
+   frame check catches it (bad CRC / wrong ID): don't send commands combined.
 4. **No delay is needed between the write and the read.** The firmware
    finalizes the command even when the read arrives back-to-back with the
    write's STOP; the pending read is paced by hardware clock stretching until
