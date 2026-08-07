@@ -7,6 +7,18 @@
 
 #include "i2c_port.h"
 
+// SCL-low hardware timeout (TIMEOUTR.TIMEOUTA, TIDLE=0): if SCL stays low
+// longer than this, the peripheral releases SCL/SDA on its own and raises the
+// TIMEOUT flag (routed to ST_INIT below). 50 ms is longer than the worst
+// legitimate stall -- an EEPROM page transfer, ~45 ms max-spec -- so it never
+// fires in normal operation. It is a pure backstop: it bounds the bus hold at
+// 50 ms instead of the ~550 ms IWDG reset if the firmware dies mid-stretch,
+// it keeps counting while a debugger halts the core (only the IWDG is frozen
+// via DBGMCU), and it does not depend on the LSI oscillator.
+// tick = 2048 / 48 MHz I2CCLK = 42.67 us; (1171 + 1) * 42.67 us = 50.0 ms.
+// All boards clock I2C1 from SYSCLK = 48 MHz.
+#define SCL_LOW_TIMEOUT     (1171)
+
 namespace i2c_hat {
 namespace driver {
 
@@ -88,6 +100,15 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
         state_ = ST_INIT;
     }
 
+    if(LL_I2C_IsActiveSMBusFlag_TIMEOUT(port_)) {
+        // SCL was low for > SCL_LOW_TIMEOUT: the hardware has already
+        // released SCL/SDA (see the define above); restart cleanly. Note the
+        // detector watches the bus itself, so another device holding SCL that
+        // long trips this too -- the recovery is harmless either way.
+        LL_I2C_ClearSMBusFlag_TIMEOUT(port_);
+        state_ = ST_INIT;
+    }
+
     switch(state_) {
 
     case ST_INIT:
@@ -101,6 +122,12 @@ void I2CPort::transfer(uint32_t& receive_size, uint32_t& transmit_size) {
         while(LL_I2C_IsEnabled(port_)) {
         }
         LL_I2C_Enable(port_);
+        // (re)arm the SCL-low timeout; TIMEOUTA is only writable while its
+        // enable bit is clear, hence the disable/config/enable sequence
+        LL_I2C_DisableSMBusTimeout(port_, LL_I2C_SMBUS_TIMEOUTA);
+        LL_I2C_ConfigSMBusTimeout(port_, SCL_LOW_TIMEOUT,
+                LL_I2C_SMBUS_TIMEOUTA_MODE_SCL_LOW, 0);
+        LL_I2C_EnableSMBusTimeout(port_, LL_I2C_SMBUS_TIMEOUTA);
         release_clock_stretch_flag = false;
         state_ = ST_WAIT_ADR;
         break;
