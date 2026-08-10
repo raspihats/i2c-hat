@@ -8,6 +8,11 @@
 # per board, but the build uses hal/ instead — ignore the regenerated copies.
 boards/*/Drivers/
 
+# CubeMX's own build system (regenerated alongside Core/; this repo builds
+# with the root CMakeLists + cmake/i2c_hat_board.cmake instead).
+boards/*/CMakePresets.json
+boards/*/cmake/
+
 # Working notes, not part of the deliverable (yet).
 analysis.md
 
