@@ -22,6 +22,11 @@ enum class Command {
     // 'l','o','a','d'); formats the EEPROM pages and resets - every
     // persistent register falls back to its factory default
     RESTORE_FACTORY_DEFAULTS            = 0x18,
+    // acts only with the "boot" signature (payload 'b','o','o','t');
+    // resets into the ROM system bootloader (G0-family boards - the board
+    // re-enumerates at the ROM's I2C address, 0x56 per AN2606, on the same
+    // bus). F0 boards keep the BOOT0-jumper flow and don't implement it yet.
+    ENTER_BOOTLOADER                    = 0x19,
 
     DI_GET_VALUE                        = 0x20,
     DI_GET_CHANNEL_STATE                = 0x21,

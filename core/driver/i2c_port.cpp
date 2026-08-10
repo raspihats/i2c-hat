@@ -6,6 +6,7 @@
  */
 
 #include "i2c_port.h"
+#include "board.h"
 
 // SCL-low hardware timeout (TIMEOUTR.TIMEOUTA, TIDLE=0): if SCL stays low
 // longer than this, the peripheral releases SCL/SDA on its own and raises the
@@ -15,9 +16,14 @@
 // 50 ms instead of the ~550 ms IWDG reset if the firmware dies mid-stretch,
 // it keeps counting while a debugger halts the core (only the IWDG is frozen
 // via DBGMCU), and it does not depend on the LSI oscillator.
-// tick = 2048 / 48 MHz I2CCLK = 42.67 us; (1171 + 1) * 42.67 us = 50.0 ms.
-// All boards clock I2C1 from SYSCLK = 48 MHz.
-#define SCL_LOW_TIMEOUT     (1171)
+// tick = 2048 / I2CCLK; 50 ms / tick = I2CCLK / 40960 counts.
+// F0 boards clock I2C1 from SYSCLK = 48 MHz (the default below -> 1171,
+// (1171 + 1) * 42.67 us = 50.0 ms); a board on a different kernel clock
+// defines I2C_KERNEL_CLOCK_HZ in its board.h (ai4dcv10: 64 MHz -> 1562).
+#ifndef I2C_KERNEL_CLOCK_HZ
+#define I2C_KERNEL_CLOCK_HZ (48000000)
+#endif
+#define SCL_LOW_TIMEOUT     (I2C_KERNEL_CLOCK_HZ / 40960)
 
 namespace i2c_hat {
 namespace driver {

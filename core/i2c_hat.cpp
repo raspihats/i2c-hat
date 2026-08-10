@@ -9,6 +9,7 @@
  */
 
 #include "i2c_hat.h"
+#include "driver/bootloader.h"
 
 #ifndef BOARD_REGISTER_MODULES
 #define BOARD_REGISTER_MODULES
@@ -35,7 +36,13 @@ I2CHat::I2CHat() :
 }
 
 void I2CHat::UpdateStatusWord() {
+    // Bit 0 is "power-on reset": the F0 RCC reports it as PORRST, the G0
+    // folds POR/PDR/BOR into PWRRST (there is no PORRST flag).
+#if defined(I2C_HAT_MCU_FAMILY_G0)
+    status_ |= LL_RCC_IsActiveFlag_PWRRST()             ? 0x01 : 0x00;
+#else
     status_ |= LL_RCC_IsActiveFlag_PORRST()             ? 0x01 : 0x00;
+#endif
     status_ |= LL_RCC_IsActiveFlag_SFTRST()             ? 0x02 : 0x00;
     status_ |= LL_RCC_IsActiveFlag_IWDGRST()            ? 0x04 : 0x00;
     status_ |= communication_watchdog_.IsExpired()      ? 0x08 : 0x00;
@@ -156,6 +163,24 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
                 }
             }
             break;
+#if defined(I2C_HAT_MCU_FAMILY_G0)
+        case Command::ENTER_BOOTLOADER:
+            // Guarded like 0x1011: only the "boot" signature acts. Resets
+            // with a .noinit magic planted; the pre-init check in the
+            // board's main() then jumps to the ROM bootloader (see
+            // driver/bootloader.h for why it is not a direct jump - IWDG).
+            // Like RESET, no response is sent. G0-only for now: gating it
+            // keeps the released F0 binaries byte-identical until they
+            // adopt it in a coherent version bump.
+            if(request.payload_size() == 4
+                    and request.payload()[0] == 'b'
+                    and request.payload()[1] == 'o'
+                    and request.payload()[2] == 'o'
+                    and request.payload()[3] == 't') {
+                Bootloader_Request();
+            }
+            break;
+#endif
         default:
             response_flag = false;
             break;
