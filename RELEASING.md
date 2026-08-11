@@ -40,6 +40,10 @@ git commit -am "core: I2C clock-stretch fix; bump all boards (patch)"
 `make release-core` bumps every board and runs `build-all`; if any board fails
 to compile you find out before shipping. Pick `KIND` from the table above.
 
+If the release adds/changes commands or their semantics, update
+`REGISTER-MAP.md` (the host-facing command map with since-versions) in the
+same commit.
+
 **One-board change:**
 
 ```sh
