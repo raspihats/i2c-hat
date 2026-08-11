@@ -1,5 +1,13 @@
 /*
  * bootloader.cpp — see bootloader.h for the pattern and its rationale.
+ *
+ * Why reset-then-jump rather than the widespread "jump from the running
+ * application" recipe: that one has to undo the application first - every
+ * peripheral in reverse init order, each IRQ disabled individually, SysTick
+ * reset - and anything forgotten leaves the ROM running on a dirty chip.
+ * Planting a magic word and resetting hands the ROM a chip that is already
+ * in its reset state, so there is nothing to undo; the only setup left is
+ * the memory remap and the stack pointer.
  */
 #include "bootloader.h"
 #include "stm32xx_ll.h"
@@ -15,7 +23,38 @@
 #endif
 #endif
 
-/* ROM system-memory base (AN2606). The reset vector pair at its start is
+/* How the two families select their boot area - they are opposites, and the
+ * difference decides how much work a software entry has to do.
+ *
+ * F04x (all the F0 boards here): the User option byte ships with BOOT_SEL=1,
+ * so the BOOT0 PIN decides. The ROM re-reads that pin on entry and hands a
+ * non-empty flash straight back to the application - bench-proven 2026-08-11,
+ * which is why CheckAndEnter() below drives the pad high before jumping.
+ *
+ * G0 (ai4dcv10): ships with nBOOT_SEL=1, which means the BOOT0 pin is NOT
+ * SAMPLED AT ALL - the nBOOT0/nBOOT1 option bits decide, and their defaults
+ * say "user flash unless it is empty". So the pad-driving hack is neither
+ * possible nor expected to be needed here: BOOT0 shares PA14 with SWCLK, the
+ * board keeps that as SWCLK and carries no boot jumper.
+ *   UNVALIDATED until ai4dcv10 hardware exists: whether the G0 ROM
+ *   re-evaluates nBOOT0 on a software entry the way F04x re-reads its pin.
+ *   If it does, the lever is the option byte, not a GPIO: clear nBOOT0
+ *   (or nBOOT_SEL) before the reset and have the application restore it via
+ *   OBL_LAUNCH afterwards - persistent state, so a power cut mid-sequence
+ *   leaves the board sitting in the ROM bootloader until something jumps it
+ *   back out. Prefer the current pin-free path if it simply works.
+ * Two more G0 notes for that bring-up:
+ *   - Cortex-M0+ HAS VTOR, so SCB->VTOR = SYSTEM_MEMORY_BASE is available
+ *     instead of the SYSCFG memory remap used below (M0 on F0 has no VTOR).
+ *   - CheckAndEnter() is called from main() on G0 but from the top of
+ *     Reset_Handler on F0, which is what finally made F0 work (ahead of
+ *     SystemInit, data/bss init and the C++ static ctors). Moving the G0 call
+ *     there means patching a CubeMX-generated startup file, so it needs the
+ *     same configure-time guard the board's linker-script deltas already have.
+ *   - Deaf-app recovery on a jumperless G0 board is the SWD pads, plus the
+ *     ROM's empty check: a fully erased chip enters the bootloader by itself.
+ *
+ * ROM system-memory base (AN2606). The reset vector pair at its start is
  * the jump target. */
 #if defined(I2C_HAT_MCU_FAMILY_G0)
 #define SYSTEM_MEMORY_BASE      (0x1FFF0000UL)
