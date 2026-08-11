@@ -13,12 +13,22 @@
 #define FW_VERSION_SIZE                     (3)
 #define FW_VERSION_MAJOR                    (3)
 #define FW_VERSION_MINOR                    (1)
-#define FW_VERSION_PATCH                    (0)
+#define FW_VERSION_PATCH                    (1)
 
 #define BOARD_NAME_SIZE                     (25)
 #define BOARD_NAME                          "DI16ac I2C-HAT"
 
 #define I2C_BASE_ADDRESS                    (0x40)
+
+/* The pad the ROM boot selector samples at startup (AN2606). It is shared
+   with a GPIO on both packages this family uses - LQFP32 exposes it as PB8,
+   LQFP48 as PF11 - so the ENTER_BOOTLOADER (0x19) software entry can drive
+   it high and make the selector see "jumper fitted"
+   (core/driver/bootloader.cpp). LQFP48 part: */
+#define BOOT0_GPIO_PORT                     GPIOF
+#define BOOT0_GPIO_PIN                      LL_GPIO_PIN_11
+#define BOOT0_GPIO_PERIPH                   LL_AHB1_GRP1_PERIPH_GPIOF
+
 
 #define STATUS_LED_PIN                      driver::DigitalOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, true)
 

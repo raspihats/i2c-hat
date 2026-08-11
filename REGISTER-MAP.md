@@ -14,7 +14,7 @@ released firmware line.
 
 | Board | Address base + jumper offset | Modules | Current released FW | Notes |
 |---|---|---|---|---|
-| di16ac | 0x40 | DI×16, IRQ line | **3.1.0** | |
+| di16ac | 0x40 | DI×16, IRQ line | **3.1.1** | LQFP48 part — BOOT0 pad is PF11, not PB8 |
 | dq5rly | 0x50 | DO×5 (relays) | **1.3.0** | own 1.x line |
 | dq8rly | 0x50 | DO×8 | 2.3.0 | **prototype — do not target** |
 | dq10rly | 0x50 | DO×10 | 2.4.0 | |
@@ -52,7 +52,7 @@ released firmware line.
 | 0x14 / 0x15 | CWDT_SET_PERIOD / CWDT_GET_PERIOD | always | u32 ms, 0 disables, persistent |
 | 0x16 / 0x17 | IRQ_GET_REG / IRQ_SET_REG | DI boards, always | sub-register access, payload `[reg, u32-LE]` — see IRQ block |
 | 0x18 | RESTORE_FACTORY_DEFAULTS | di16ac 2.3.0, di6acdq6rly 2.3.0, dq10rly 2.3.0, dq5rly 1.2.0, dq8rly 2.2.0 | CiA 301 0x1011; only with ASCII payload `"load"`; formats EEPROM + resets |
-| 0x19 | ENTER_BOOTLOADER | di16ac 3.1.0, di6acdq6rly 3.1.0, dq5rly 1.3.0, dq8rly 2.3.0, dq10rly 2.4.0; G0 from ai4dcv10's first release | `"boot"`-guarded, no response; board re-enumerates at the ROM's I2C address — **0x3E on the F0 boards**, 0x56 on G0. Jumperless flashing; `stm32flash -g 0` or a full bus scan returns the bootloader to the app |
+| 0x19 | ENTER_BOOTLOADER | di16ac **3.1.1** (3.1.0 declared it but drove the wrong BOOT0 pad — no-op reset), di6acdq6rly 3.1.0, dq5rly 1.3.0, dq8rly 2.3.0, dq10rly 2.4.0; G0 from ai4dcv10's first release | `"boot"`-guarded, no response; board re-enumerates at the ROM's I2C address — **0x3E on the F0 boards**, 0x56 on G0. Jumperless flashing; `stm32flash -g 0` or a full bus scan returns the bootloader to the app |
 | 0x1A / 0x1B | CONFIG_SET/GET_SIGNATURE | same 3.1.0-series versions | CiA 301 0x1020. Controller-owned persistent u32; firmware voids it to 0 when any OTHER persistent value REALLY changes (identical re-writes keep it); factory restore wipes it. 0 = no claim |
 
 ## Digital inputs (di16ac: 16 ch, di6acdq6rly: 6 ch)

@@ -20,6 +20,16 @@
 
 #define I2C_BASE_ADDRESS                    (0x60)
 
+/* The pad the ROM boot selector samples at startup (AN2606). It is shared
+   with a GPIO on both packages this family uses - LQFP32 exposes it as PB8,
+   LQFP48 as PF11 - so the ENTER_BOOTLOADER (0x19) software entry can drive
+   it high and make the selector see "jumper fitted"
+   (core/driver/bootloader.cpp). LQFP32 part: */
+#define BOOT0_GPIO_PORT                     GPIOB
+#define BOOT0_GPIO_PIN                      LL_GPIO_PIN_8
+#define BOOT0_GPIO_PERIPH                   LL_AHB1_GRP1_PERIPH_GPIOB
+
+
 #define STATUS_LED_PIN                      driver::DigitalOutputPin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, true)
 
 #define DIGITAL_INPUT_CHANNEL_COUNT         (6)
