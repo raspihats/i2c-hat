@@ -34,7 +34,7 @@ the canonical 8-bit objects, since the HATs move 32-bit masks regardless.
 | `0x6207` | Error value output | `DQ_SET/GET_SAFETY_VALUE` 0x32/0x33, loaded by the board on a CWDT trip | **adopted** |
 | `0x6206` | Error mode output | `DO_SET/GET_SAFETY_MASK` 0x3A/0x3B - per bit: 1 = load the error value on a trip, 0 = hold last state | **adopted** (1.2.0/2.2.0/2.3.0 series) |
 | `0x6202` | Change polarity output | `DO_SET/GET_POLARITY` 0x38/0x39 - persistent per-bit invert, applied by firmware between process value and pin | **adopted** (1.2.0/2.2.0/2.3.0 series) |
-| `0x6208` | Filter mask output | per-bit "which bits does a bulk write affect" | proposed (drawer) |
+| `0x6208` | Filter mask output | `DO_SET/GET_WRITE_MASK` 0x3C/0x3D - gates bulk writes only, volatile (all-ones after reset) | **adopted** (3.1.0 series) |
 | - | (no CiA analogue) | `DQ_SET/GET_POWER_ON_VALUE` 0x30/0x31, applied at power-up | **adopted** |
 
 Notes per object:
@@ -52,11 +52,55 @@ Notes per object:
   model. Default 0 (no inversion). One commissioning hazard to respect:
   writing this register flips live pins instantly, so it is an engineering
   act - the controller reconciles it at activation, never during RUN.
-- **`0x6208` filter mask.** Today the controller drives unmapped channels
-  to 0 on every bulk write; with this register an unmapped channel is
-  genuinely untouched (a test rig or manual tool can own it). Decision to
-  make when it is picked up: whether the mask gates only write commands
-  (CiA's reading) or also the error/power-on value application.
+- **`0x6208` filter mask** - the drawer item, fully specified here so
+  picking it up is an implementation act, not a design session.
+
+  *Concept.* A persistent per-bit mask answering one question: which
+  channels does a BULK output write affect? Bit set = the channel obeys
+  `DO_SET_VALUE`; bit clear = bulk writes flow around it, whatever value
+  they carry in that bit position. Today the controller drives unmapped
+  channels to 0 on every bulk write - the port is all-or-nothing. With
+  the mask, an unmapped channel is genuinely nobody's: the controller
+  owns its channels, a test rig / manual tool / second process owns the
+  rest via single-channel writes, and neither stomps the other. It earns
+  its place the day one board's outputs really have two masters - that is
+  the drawer condition.
+
+  *Checked against a fielded DS401 implementation (Ascon Tecnologic
+  IO-CB/DO-04RL manual, 2026-08-11):* it documents 6208h as a PREPROCESS
+  of the 6200h write path ("two preprocess items are performed:
+  polarisation 6202h, masking 6208h"; 0 = "the received output value is
+  neglected ... and the old output value is kept", default FFh), routes
+  error mode/value through a separate path the mask does not touch, and
+  even exempts its proprietary pulse-write function from polarity and
+  filter mask - real-world precedent for exempting non-bulk write paths.
+  Whether the spec text itself gates the 1-bit objects (6220h) remains
+  unverified from public sources; consult the CiA 401 document for the
+  letter of it.
+
+  *Settled design (recorded 2026-08-11).* Orthogonal masks, one job
+  each - no double meanings:
+  - `0x6208` gates BULK process writes (0x34) only - CiA's strict
+    reading of the filter-mask object.
+  - `0x6206` (already shipped) alone decides per-channel CWDT-trip
+    behavior; a masked-out-of-writes channel can still be forced safe
+    by a trip if its 0x6206 bit says so. Safety stays safety.
+  - The power-on value stays global (whole-board boot posture).
+  - Single-channel writes (0x36) BYPASS the mask - they are exactly the
+    mechanism the other owner uses.
+
+  *Implemented (3.1.0 series, 2026-08-11).* Opcode pair
+  `DO_SET/GET_WRITE_MASK` 0x3C/0x3D; the bulk path applies
+  `effective = (current & ~mask) | (written & mask)`. **VOLATILE, not
+  persistent** - all-ones after every reset (DS401 practice: fielded
+  devices exclude 6208h from non-volatile storage). Rationale: the mask
+  is a runtime ownership arrangement, not commissioning - at reset the
+  controller reclaims the whole port at a known baseline, a stale mask
+  cannot leave phantom-dead channels across power cycles, and it stays
+  out of the 0x1020 signature by construction. `DO_SET_VALUE` validates
+  and echoes the RECEIVED value (the command took; masked bits were
+  processed per the mask), so an oblivious bulk-writing host keeps its
+  echo verification; `DO_GET_VALUE` reads the truth.
 - **The CWDT itself** is the CiA 301 piece the error block hangs off:
   node-guarding/heartbeat by another name (`CWDT_SET/GET_PERIOD`
   0x14/0x15, fed by any successful transaction, trips into `0x6207`'s

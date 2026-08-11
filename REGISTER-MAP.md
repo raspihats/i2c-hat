@@ -14,11 +14,11 @@ released firmware line.
 
 | Board | Address base + jumper offset | Modules | Current released FW | Notes |
 |---|---|---|---|---|
-| di16ac | 0x40 | DI×16, IRQ line | **3.0.0** | |
-| dq5rly | 0x50 | DO×5 (relays) | **1.2.0** | own 1.x line |
-| dq8rly | 0x50 | DO×8 | 2.2.0 | **prototype — do not target** |
-| dq10rly | 0x50 | DO×10 | 2.3.0 | built/released, never hardware-validated |
-| di6acdq6rly | 0x60 | DI×6, DO×6 (relays), IRQ line | **3.0.0** | |
+| di16ac | 0x40 | DI×16, IRQ line | **3.1.0** | |
+| dq5rly | 0x50 | DO×5 (relays) | **1.3.0** | own 1.x line |
+| dq8rly | 0x50 | DO×8 | 2.3.0 | **prototype — do not target** |
+| dq10rly | 0x50 | DO×10 | 2.4.0 | |
+| di6acdq6rly | 0x60 | DI×6, DO×6 (relays), IRQ line | **3.1.0** | |
 | ai4dcv10 | 0x70 (planned) | AI×4 (INA228), STM32G0 | unreleased, in development | first G0 board |
 
 ## Transport (identical on all boards)
@@ -52,7 +52,8 @@ released firmware line.
 | 0x14 / 0x15 | CWDT_SET_PERIOD / CWDT_GET_PERIOD | always | u32 ms, 0 disables, persistent |
 | 0x16 / 0x17 | IRQ_GET_REG / IRQ_SET_REG | DI boards, always | sub-register access, payload `[reg, u32-LE]` — see IRQ block |
 | 0x18 | RESTORE_FACTORY_DEFAULTS | di16ac 2.3.0, di6acdq6rly 2.3.0, dq10rly 2.3.0, dq5rly 1.2.0, dq8rly 2.2.0 | CiA 301 0x1011; only with ASCII payload `"load"`; formats EEPROM + resets |
-| 0x19 | ENTER_BOOTLOADER | G0 boards only (ai4dcv10, unreleased) | `"boot"`-guarded; re-enumerates at ROM addr 0x56. **Not implemented on any F0 board** |
+| 0x19 | ENTER_BOOTLOADER | di16ac 3.1.0, di6acdq6rly 3.1.0, dq5rly 1.3.0, dq8rly 2.3.0, dq10rly 2.4.0; G0 from ai4dcv10's first release | `"boot"`-guarded, no response; board re-enumerates at the ROM's I2C address — **0x3E on the F0 boards**, 0x56 on G0. Jumperless flashing; `stm32flash -g 0` or a full bus scan returns the bootloader to the app |
+| 0x1A / 0x1B | CONFIG_SET/GET_SIGNATURE | same 3.1.0-series versions | CiA 301 0x1020. Controller-owned persistent u32; firmware voids it to 0 when any OTHER persistent value REALLY changes (identical re-writes keep it); factory restore wipes it. 0 = no claim |
 
 ## Digital inputs (di16ac: 16 ch, di6acdq6rly: 6 ch)
 
@@ -98,6 +99,7 @@ Pi GPIO21 with pull-up; treat as a LEVEL, check it before sleeping):
 | 0x36 / 0x37 | DO_SET/GET_CHANNEL_STATE | always | single channel |
 | 0x38 / 0x39 | DO_SET/GET_POLARITY | di6acdq6rly 2.3.0, dq10rly 2.3.0, dq5rly 1.2.0, dq8rly 2.2.0 | CiA 401 0x6202. Per-bit invert at the pin for EVERY state source (writes, safety, power-on); bus value stays logical. Persistent, default 0. Writing flips live pins instantly |
 | 0x3A / 0x3B | DO_SET/GET_SAFETY_MASK | same versions | CiA 401 0x6206. Trip applies `(value & ~mask) \| (safety & mask)`. Persistent, default all-ones (every channel loads safety value) |
+| 0x3C / 0x3D | DO_SET/GET_WRITE_MASK | 3.1.0 series (di6acdq6rly 3.1.0, dq5rly 1.3.0, dq8rly 2.3.0, dq10rly 2.4.0) | CiA 401 0x6208. Gates BULK writes (0x34) only — masked-out channels keep their state; single-channel writes (0x36) bypass it; trips/power-on unaffected. **VOLATILE: all-ones after every reset.** With a non-default mask, 0x34 validates and echoes the RECEIVED value; 0x35 reads the truth |
 
 ## Analog inputs (0x40–0x48)
 
@@ -118,14 +120,17 @@ released board — all answer 0xEE.
 | 0x6202 output polarity | 0x38/0x39 | adopted (CiA series) |
 | 0x6206 error mode output | 0x3A/0x3B | adopted (CiA series) |
 | 0x6207 error value output | 0x32/0x33 | adopted |
-| 0x6208 output write mask | — | proposed (roadmap rank 2) |
+| 0x6208 output write mask | 0x3C/0x3D | adopted, volatile (3.1.0 series) |
 | 0x1011 restore defaults | 0x18 `"load"` | adopted (CiA series) |
-| 0x1020 verify configuration | — | proposed (roadmap rank 1) |
+| 0x1020 verify configuration | 0x1A/0x1B `CONFIG_SET/GET_SIGNATURE` | adopted (3.1.0 series) |
 | 0x1001-ish error register | 0x12 status word | adopted |
 
 ## Host library
 
-Python `raspihats` **3.0.0** on PyPI covers everything above
-(`di.polarity`, `di.filters[i]`, `di.irq_reg.*` incl. `global_enable`,
-`dq.polarity`, `dq.safety_mask`, `restore_factory_defaults()`).
+Python `raspihats` **3.0.0** on PyPI covers everything through the IRQ
+block (`di.polarity`, `di.filters[i]`, `di.irq_reg.*` incl.
+`global_enable`, `dq.polarity`, `dq.safety_mask`,
+`restore_factory_defaults()`). The 3.1.0-series additions
+(`enter_bootloader()`, `config_signature`, `dq.write_mask`) are in the
+library repo; the matching PyPI release is pending.
 Retry policy: 5× with 10 ms backoff on I/O error / bad CRC / ID-CMD mismatch.

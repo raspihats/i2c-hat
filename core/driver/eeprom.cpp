@@ -9,6 +9,19 @@
 namespace i2c_hat {
 namespace driver {
 
+/* CiA 301 0x1020 semantics, enforced at the single choke point every
+ * persistent register passes through: a REAL change to any other stored
+ * value voids the configuration signature. Both family Write() paths call
+ * this AFTER their skip-if-unchanged guard, so a reconcile that re-confirms
+ * the same configuration keeps its signature. Writing the signature itself
+ * recurses exactly once and no-ops here (vaddr matches), and clearing an
+ * already-cleared signature is free (the guard skips it). */
+static void InvalidateConfigSignature(const uint16_t virtAddress) {
+    if(virtAddress != EEP_VIRT_ADR_CONFIG_SIGNATURE) {
+        Eeprom::Write(EEP_VIRT_ADR_CONFIG_SIGNATURE, 0);
+    }
+}
+
 #if defined(I2C_HAT_MCU_FAMILY_G0)
 
 /* X-CUBE-EEPROM (middleware/eeprom_emul/): 1-based virtual addresses, one
@@ -46,6 +59,8 @@ bool Eeprom::Write(const uint16_t virtAddress, const uint32_t value) {
     if(Read(virtAddress, current) and (current == value)) {
         return true;
     }
+
+    InvalidateConfigSignature(virtAddress);
 
     status = EE_WriteVariable32bits(virtAddress + 1U, value);
     if((status & EE_STATUSMASK_CLEANUP) != 0U) {
@@ -109,6 +124,8 @@ bool Eeprom::Write(const uint16_t virtAddress, const uint32_t value) {
     if(Read(virtAddress, current) and (current == value)) {
         return true;
     }
+
+    InvalidateConfigSignature(virtAddress);
 
     status1 = EE_WriteVariable(virtAddress, (uint16_t)value);
     status2 = EE_WriteVariable(virtAddress + 1, (uint16_t)(value >> 16));

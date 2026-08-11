@@ -57,6 +57,12 @@ enum {
     EEP_VIRT_ADR_DI_IRQ_FALLING_LOW,
     EEP_VIRT_ADR_DI_IRQ_FALLING_HIGH,
 #endif
+    /* CiA 301 0x1020 configuration signature - every board. Appended after
+       the per-feature blocks, so each board's existing slot numbers are
+       preserved (the numeric value differs per board; that's fine, the
+       layout is per-board anyway). */
+    EEP_VIRT_ADR_CONFIG_SIGNATURE_LOW,
+    EEP_VIRT_ADR_CONFIG_SIGNATURE_HIGH,
     EEP_VIRT_ADR_COUNT,
 };
 
@@ -73,6 +79,7 @@ enum {
 #define EEP_VIRT_ADR_DI_IRQ_RISING          EEP_VIRT_ADR_DI_IRQ_RISING_LOW
 #define EEP_VIRT_ADR_DI_IRQ_FALLING         EEP_VIRT_ADR_DI_IRQ_FALLING_LOW
 #endif
+#define EEP_VIRT_ADR_CONFIG_SIGNATURE       EEP_VIRT_ADR_CONFIG_SIGNATURE_LOW
 
 /* How many entries of VirtAddVarTab (core/driver/eeprom.cpp) the middleware walks
  * on a page transfer. It is the table's length by definition, so the two cannot

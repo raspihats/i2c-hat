@@ -165,6 +165,16 @@ SECTIONS
   } >RAM
 
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
+  /* Not zeroed by startup (outside _sbss/_ebss): survives NVIC_SystemReset.
+     Carries the ROM-bootloader-entry magic (core/driver/bootloader.cpp). */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(4);
+    KEEP(*(.noinit))
+    KEEP(*(.noinit*))
+    . = ALIGN(4);
+  } >RAM
+
   ._user_heap_stack :
   {
     . = ALIGN(8);

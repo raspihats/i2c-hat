@@ -3,13 +3,20 @@
  */
 #include "bootloader.h"
 #include "stm32xx_ll.h"
+#if defined(I2C_HAT_MCU_FAMILY_G0)
+#include "stm32g0xx_ll_bus.h"
+#include "stm32g0xx_ll_system.h"
+#else
+#include "stm32f0xx_ll_bus.h"
+#include "stm32f0xx_ll_system.h"
+#endif
 
 /* ROM system-memory base (AN2606). The reset vector pair at its start is
  * the jump target. */
 #if defined(I2C_HAT_MCU_FAMILY_G0)
 #define SYSTEM_MEMORY_BASE      (0x1FFF0000UL)
-#else /* F0 (F04x). Unused today: the F0 boards enter via the BOOT0 jumper,
-       * and adopting the command there is a future coherent release. */
+#else /* F0 (F04x): same ROM bootloader the BOOT0 jumper reaches; software
+       * entry lands on I2C at the familiar 0x3E. */
 #define SYSTEM_MEMORY_BASE      (0x1FFFC400UL)
 #endif
 
@@ -32,10 +39,31 @@ extern "C" void Bootloader_CheckAndEnter(void) {
     }
     bootloader_magic = 0;
 
-    // Called before any clock/peripheral init, so the chip is still in its
-    // reset state - what the ROM bootloader expects. On the G0 it then
-    // listens on I2C1 (PB6/PB7) at 7-bit address 0x56, among its other
-    // interfaces.
+    // Cortex-M0/M0+ has no VTOR: remap system memory to 0x00000000 so the
+    // ROM's own vector table serves exceptions - exactly what the hardware
+    // BOOT0 path does at reset. Without the remap, any exception inside the
+    // ROM vectors through the application's table and relaunches the app
+    // (observed on the bench: 0x19 soft-reset but the app came back).
+#if defined(I2C_HAT_MCU_FAMILY_G0)
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+#else
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
+
+    // F04x: the ROM's boot selector does a LIVE read of the BOOT0 pin
+    // (PB8 pad on F042) and jumps straight back to a non-empty flash app
+    // when it reads low - bench-proven: the same software entry stays in
+    // the bootloader when BOOT0 is held high externally. Drive PB8
+    // push-pull high before the jump so the selector sees "jumper on";
+    // the pin falls back to its reset state on the next chip reset.
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+    LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_8);
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_8, LL_GPIO_MODE_OUTPUT);
+#endif
+    LL_SYSCFG_SetRemapMemory(LL_SYSCFG_REMAP_SYSTEMFLASH);
+
+    // Called before any clock/peripheral init otherwise, so the chip is in
+    // its reset state - what the ROM bootloader expects. It then listens on
+    // I2C among its other interfaces (AN2606: 0x3E on F04x, 0x56 on G0).
     uint32_t stack = *reinterpret_cast<uint32_t const*>(SYSTEM_MEMORY_BASE);
     uint32_t entry = *reinterpret_cast<uint32_t const*>(SYSTEM_MEMORY_BASE + 4U);
     __set_MSP(stack);

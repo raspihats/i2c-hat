@@ -37,7 +37,8 @@ DigitalOutputs::DigitalOutputs() :
         power_on_value_(DEFAULT_POWER_ON_VALUE),
         safety_value_(DEFAULT_SAFETY_VALUE),
         polarity_(DEFAULT_POLARITY),
-        safety_mask_(DEFAULT_SAFETY_MASK) {
+        safety_mask_(DEFAULT_SAFETY_MASK),
+        write_mask_((0x01UL << DIGITAL_OUTPUT_CHANNEL_COUNT) - 1U) {
 
 }
 
@@ -360,11 +361,34 @@ bool DigitalOutputs::ProcessRequest(Frame& request, Frame& response) {
     case Command::DO_SET_VALUE:
         if(request.payload_size() == 4) {
             BYTES_TO_UINT32(request.payload(), temp);
-            if(SetValue(temp)) {
-                temp = GetValue();
+            // CiA 401 0x6208: the write mask is a preprocess of the bulk
+            // write - masked-out channels keep their state whatever the
+            // frame says. The RECEIVED value is validated and echoed (the
+            // command took; masked bits were processed per the mask), so
+            // an oblivious bulk-writing host keeps its echo check working.
+            // DO_GET_VALUE reads the truth.
+            if(IsValid(temp)
+                    and SetValue((GetValue() & ~write_mask_) | (temp & write_mask_))) {
                 response.set_payload((uint8_t*)&temp, 4);
                 response_flag = true;
             }
+        }
+        break;
+    case Command::DO_SET_WRITE_MASK:
+        // CiA 401 0x6208, volatile: all-ones after every reset
+        if(request.payload_size() == 4) {
+            BYTES_TO_UINT32(request.payload(), temp);
+            if(IsValid(temp)) {
+                write_mask_ = temp;
+                response.set_payload((uint8_t*)&write_mask_, 4);
+                response_flag = true;
+            }
+        }
+        break;
+    case Command::DO_GET_WRITE_MASK:
+        if(request.payload_size() == 0) {
+            response.set_payload((uint8_t*)&write_mask_, 4);
+            response_flag = true;
         }
         break;
     case Command::DO_GET_VALUE:

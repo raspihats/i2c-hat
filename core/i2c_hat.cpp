@@ -163,15 +163,13 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
                 }
             }
             break;
-#if defined(I2C_HAT_MCU_FAMILY_G0)
         case Command::ENTER_BOOTLOADER:
             // Guarded like 0x1011: only the "boot" signature acts. Resets
             // with a .noinit magic planted; the pre-init check in the
             // board's main() then jumps to the ROM bootloader (see
             // driver/bootloader.h for why it is not a direct jump - IWDG).
-            // Like RESET, no response is sent. G0-only for now: gating it
-            // keeps the released F0 binaries byte-identical until they
-            // adopt it in a coherent version bump.
+            // Like RESET, no response is sent. The board re-enumerates at
+            // the ROM's I2C address (0x3E on F04x, 0x56 on G0).
             if(request.payload_size() == 4
                     and request.payload()[0] == 'b'
                     and request.payload()[1] == 'o'
@@ -180,7 +178,27 @@ bool I2CHat::ProcessRequest(Frame& request, Frame& response) {
                 Bootloader_Request();
             }
             break;
-#endif
+        case Command::CONFIG_SET_SIGNATURE:
+            // CiA 301 0x1020: stored verbatim; any real change to another
+            // persistent value voids it back to 0 (choke point in
+            // driver/eeprom.cpp). Echoes the value like every SET.
+            if(request.payload_size() == 4) {
+                BYTES_TO_UINT32(request.payload(), u32);
+                if(driver::Eeprom::Write(EEP_VIRT_ADR_CONFIG_SIGNATURE, u32)) {
+                    response.set_payload((uint8_t*)&u32, 4);
+                    response_flag = true;
+                }
+            }
+            break;
+        case Command::CONFIG_GET_SIGNATURE:
+            if(request.payload_size() == 0) {
+                if(not driver::Eeprom::Read(EEP_VIRT_ADR_CONFIG_SIGNATURE, u32)) {
+                    u32 = 0;    // never stored (or wiped): no claim
+                }
+                response.set_payload((uint8_t*)&u32, 4);
+                response_flag = true;
+            }
+            break;
         default:
             response_flag = false;
             break;

@@ -23,10 +23,19 @@ enum class Command {
     // persistent register falls back to its factory default
     RESTORE_FACTORY_DEFAULTS            = 0x18,
     // acts only with the "boot" signature (payload 'b','o','o','t');
-    // resets into the ROM system bootloader (G0-family boards - the board
-    // re-enumerates at the ROM's I2C address, 0x56 per AN2606, on the same
-    // bus). F0 boards keep the BOOT0-jumper flow and don't implement it yet.
+    // resets into the ROM system bootloader - the board re-enumerates at
+    // the ROM's I2C address on the same bus (AN2606: 0x3E on the F04x
+    // boards, 0x56 on G0). Jumperless flashing; a full bus scan (or
+    // stm32flash -g 0) returns the bootloader to the application.
     ENTER_BOOTLOADER                    = 0x19,
+    // CiA 301 0x1020: configuration signature. The controller stores any
+    // non-zero token after a successful reconcile; the firmware voids it
+    // (back to 0) whenever any OTHER persistent value actually changes, so
+    // a surviving signature proves the whole configuration is untouched.
+    // Unchanged re-writes keep it (the EEPROM skip-if-unchanged guard runs
+    // first). 0 = no claim; factory restore wipes it with everything else.
+    CONFIG_SET_SIGNATURE                = 0x1A,
+    CONFIG_GET_SIGNATURE                = 0x1B,
 
     DI_GET_VALUE                        = 0x20,
     DI_GET_CHANNEL_STATE                = 0x21,
@@ -59,6 +68,15 @@ enum class Command {
     DO_GET_POLARITY                     = 0x39,
     DO_SET_SAFETY_MASK                  = 0x3A,
     DO_GET_SAFETY_MASK                  = 0x3B,
+    // CiA 401 0x6208 filter mask output: gates BULK writes (0x34) only -
+    // a masked-out channel keeps its state whatever the bulk frame says.
+    // Single-channel writes (0x36) bypass it (the other owner's door),
+    // and the CWDT trip / power-on paths are governed solely by 0x6206 /
+    // the power-on value. VOLATILE by design (DS401 practice): all-ones
+    // after every reset, so the controller reclaims the whole port at a
+    // known baseline.
+    DO_SET_WRITE_MASK                   = 0x3C,
+    DO_GET_WRITE_MASK                   = 0x3D,
 
     AI_GET_CHANNEL_VOLTAGE              = 0x40,
     AI_GET_CHANNEL_CURRENT              = 0x41,
