@@ -66,13 +66,26 @@ prepends a dated entry to `CHANGELOG.md`, so the changelog can't drift.
 | new board | just it (start 1.0.0) | — |
 | refactor, no behaviour change | none | no bump |
 
-## Optional: tags & provenance
+## Tags
 
-- Tag a shipped board when you want a marker: `git tag di16ac-v2.1.4`.
-- To answer "which physical board runs which build", bake `git describe` into
-  the binary and expose it via a future `GET_BUILD_ID` command (a MINOR change).
+Every shipped board version gets an annotated tag named
+**`<board>-v<major.minor.patch>`** (e.g. `di16ac-v3.0.0`). A core release that
+bumps several boards puts several tags on the same commit - that's the point:
+`git tag -l 'di16ac-*'` is that board's release history.
 
-Neither is required for the daily loop; add them the day you miss them.
+```sh
+make tag BOARD=di16ac MSG="regression 11/11 on the bench"   # tags HEAD
+make tag BOARD=di16ac COMMIT=abd541c                        # backfill a past release
+git push --tags
+```
+
+`tools/tag.sh` reads `FW_VERSION_*` from the board's `board.h` *at the tagged
+commit* - the same single source of truth the firmware reports over I2C - so
+the tag name cannot drift from what the binary says. Put the validation
+one-liner in `MSG` (what passed, on which bench); the changelog holds the rest.
+
+To answer "which physical board runs which build", bake `git describe` into
+the binary and expose it via a future `GET_BUILD_ID` command (a MINOR change).
 
 ---
 

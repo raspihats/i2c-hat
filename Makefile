@@ -15,7 +15,7 @@ BUILD_DIR   := build
 TOOLCHAIN   := cmake/arm-none-eabi-toolchain.cmake
 BUILD_TYPE  ?= Debug
 
-.PHONY: help build build-all bump release-core changelog clean list
+.PHONY: help build build-all bump release-core changelog tag clean list
 
 help:
 	@echo "Boards: $(BOARDS)"
@@ -25,6 +25,7 @@ help:
 	@echo "  make bump BOARD=<name> KIND=patch  bump version (patch|minor|major)"
 	@echo "  make release-core KIND=patch       bump ALL boards then build all"
 	@echo "  make changelog BOARD=<name> MSG=.. append a changelog entry"
+	@echo "  make tag BOARD=<name> [MSG=..]     annotated tag <board>-v<version> from board.h"
 	@echo "  make clean"
 
 list:
@@ -64,6 +65,11 @@ changelog:
 	@test -n "$(BOARD)" || { echo "set BOARD=<name> (or edit CHANGELOG.md by hand)"; exit 2; }
 	@test -n "$(MSG)"   || { echo 'set MSG="..."'; exit 2; }
 	tools/changelog.sh "$(MSG)" $(BOARD)
+
+# --- annotated release tag <board>-v<version>, version read from board.h ----
+tag:
+	@test -n "$(BOARD)" || { echo "set BOARD=<name>"; exit 2; }
+	tools/tag.sh $(BOARD) "$(MSG)" $(COMMIT)
 
 clean:
 	rm -rf $(BUILD_DIR)
