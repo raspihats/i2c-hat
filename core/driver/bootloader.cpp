@@ -8,6 +8,26 @@
  * Planting a magic word and resetting hands the ROM a chip that is already
  * in its reset state, so there is nothing to undo; the only setup left is
  * the memory remap and the stack pointer.
+ *
+ * The deinit recipe was measured against this one on the bench (DUT,
+ * 2026-08-11). Three runs, and the reset-flag readings are what make them
+ * conclusive - they rule out a crash or a watchdog as the explanation:
+ *   - full deinit + direct jump, BOOT0 pad untouched     -> ROM returned to
+ *     the application, status word 0x00 (no reset at all);
+ *   - ST's published recipe verbatim (community KB: disable IRQs, stop
+ *     SysTick, RCC deinit, clear NVIC, enable IRQs, MSP, jump - no memory
+ *     remap, no peripheral resets), pad untouched        -> same, 0x00;
+ *   - same deinit + BOOT0 pad driven high                -> bootloader at
+ *     0x3E in under a second.
+ * So the deinit path buys nothing on F04x: what ends the session is the
+ * ROM's own empty-check (below), which runs after any recipe has finished.
+ * It also drags a live IWDG into the ROM, since the watchdog cannot be
+ * stopped once the application started it - a jump without a reset must
+ * stretch it to its maximum, 26 s at the nominal 40 kHz LSI but only
+ * ~17.5 s at the 60 kHz end of the spec. (A measured write+verify of this
+ * 17 KB image takes 5 s, so that window would have been survivable; the
+ * reason to prefer reset-then-jump is the empty-check result plus the free
+ * IWDG clear, not the timing.)
  */
 #include "bootloader.h"
 #include "stm32xx_ll.h"
@@ -27,22 +47,33 @@
  * difference decides how much work a software entry has to do.
  *
  * F04x (all the F0 boards here): the User option byte ships with BOOT_SEL=1,
- * so the BOOT0 PIN decides. The ROM re-reads that pin on entry and hands a
- * non-empty flash straight back to the application - bench-proven 2026-08-11,
- * which is why CheckAndEnter() below drives the pad high before jumping.
+ * so the BOOT0 PIN decides the boot area. On top of that these parts carry
+ * the EMPTY CHECK, which is what actually ends a software entry - ST states
+ * it plainly (community article "Empty check mechanism on STM32", which
+ * names STM32F04x and STM32F070x6): "The system bootloader ... can detect
+ * that flash is no longer empty. It then changes the boot memory mapping to
+ * Main Flash and performs a jump to user code programmed there."
+ * That check runs INSIDE the ROM, after any jump recipe has done its work,
+ * which is why no published sequence avoids it. Driving BOOT0 high is what
+ * tells the ROM the entry was deliberate, so it skips the fallback - that is
+ * the only stateless escape, and it is what CheckAndEnter() does below. The
+ * alternatives are the nBOOT0/BOOT_SEL option bits (persistent, and it
+ * disables jumper recovery) or genuinely empty flash (destructive).
  *
  * G0 (ai4dcv10): ships with nBOOT_SEL=1, which means the BOOT0 pin is NOT
  * SAMPLED AT ALL - the nBOOT0/nBOOT1 option bits decide, and their defaults
- * say "user flash unless it is empty". So the pad-driving hack is neither
- * possible nor expected to be needed here: BOOT0 shares PA14 with SWCLK, the
- * board keeps that as SWCLK and carries no boot jumper.
- *   UNVALIDATED until ai4dcv10 hardware exists: whether the G0 ROM
- *   re-evaluates nBOOT0 on a software entry the way F04x re-reads its pin.
- *   If it does, the lever is the option byte, not a GPIO: clear nBOOT0
- *   (or nBOOT_SEL) before the reset and have the application restore it via
- *   OBL_LAUNCH afterwards - persistent state, so a power cut mid-sequence
- *   leaves the board sitting in the ROM bootloader until something jumps it
- *   back out. Prefer the current pin-free path if it simply works.
+ * say "user flash unless it is empty". BOOT0 also shares PA14 with SWCLK
+ * there, which the board keeps as SWCLK, and it carries no boot jumper.
+ *   DECIDED: the G0 will NOT use a pad drive - the pin is not sampled, so
+ *   there is nothing to fake, and PA14 must stay SWCLK. The G0 path below is
+ *   deliberately pad-free.
+ *   TO VALIDATE on ai4dcv10 hardware: whether the G0 ROM applies its own
+ *   empty-check style fallback to a software entry. If it turns out to, the
+ *   lever is the option byte, not a GPIO: clear nBOOT0 before the reset and
+ *   have the application restore it via OBL_LAUNCH afterwards - persistent
+ *   state, so a power cut mid-sequence leaves the board in the ROM until
+ *   something jumps it back out. Only reach for that if the pad-free path
+ *   proves insufficient.
  * Two more G0 notes for that bring-up:
  *   - Cortex-M0+ HAS VTOR, so SCB->VTOR = SYSTEM_MEMORY_BASE is available
  *     instead of the SYSCFG memory remap used below (M0 on F0 has no VTOR).
@@ -92,14 +123,15 @@ extern "C" void Bootloader_CheckAndEnter(void) {
 #else
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
 
-    // F04x: the ROM's boot selector does a LIVE read of the BOOT0 pad and
-    // jumps straight back to a non-empty flash app when it reads low -
-    // bench-proven: the same software entry stays in the bootloader when
-    // BOOT0 is held high externally. Drive the pad push-pull high before
-    // the jump so the selector sees "jumper fitted"; it falls back to its
-    // reset state on the next chip reset. WHICH pad is package-specific
-    // (LQFP32 = PB8, LQFP48 = PF11), hence the board.h macros - driving
-    // the wrong one silently relaunches the application.
+    // F04x only: defeat the ROM's empty check (see the header comment). It
+    // reads BOOT0 live, and with the pad low it remaps to main flash and
+    // relaunches the non-empty application. Driving the pad push-pull high
+    // marks the entry as deliberate, exactly as a fitted jumper would; the
+    // pin returns to its reset state at the next chip reset. WHICH pad is
+    // package-specific (LQFP32 = PB8, LQFP48 = PF11), hence the board.h
+    // macros - driving the wrong one silently relaunches the application,
+    // which is precisely how di16ac 3.1.0 shipped broken.
+    // The G0 needs none of this: its ROM does not sample the pin.
     LL_AHB1_GRP1_EnableClock(BOOT0_GPIO_PERIPH);
     LL_GPIO_SetOutputPin(BOOT0_GPIO_PORT, BOOT0_GPIO_PIN);
     LL_GPIO_SetPinMode(BOOT0_GPIO_PORT, BOOT0_GPIO_PIN, LL_GPIO_MODE_OUTPUT);
