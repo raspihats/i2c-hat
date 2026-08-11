@@ -49,6 +49,13 @@ enum {
     EEP_VIRT_ADR_DI_FILTER_BASE,
     EEP_VIRT_ADR_DI_FILTER_LAST = EEP_VIRT_ADR_DI_FILTER_BASE
                                   + 2 * DIGITAL_INPUT_CHANNEL_COUNT - 1,
+    /* CiA 401 alignment (ROADMAP.md): 0x6007/0x6008 interrupt masks (IRQ
+       rising/falling edge control), persistent from the IRQ-block series.
+       The global enable 0x6005 is deliberately volatile - no slot here. */
+    EEP_VIRT_ADR_DI_IRQ_RISING_LOW,
+    EEP_VIRT_ADR_DI_IRQ_RISING_HIGH,
+    EEP_VIRT_ADR_DI_IRQ_FALLING_LOW,
+    EEP_VIRT_ADR_DI_IRQ_FALLING_HIGH,
 #endif
     EEP_VIRT_ADR_COUNT,
 };
@@ -63,6 +70,8 @@ enum {
 #ifdef DIGITAL_INPUT_CHANNEL_COUNT
 #define EEP_VIRT_ADR_DI_POLARITY            EEP_VIRT_ADR_DI_POLARITY_LOW
 #define EEP_VIRT_ADR_DI_FILTER(channel)     (EEP_VIRT_ADR_DI_FILTER_BASE + 2 * (channel))
+#define EEP_VIRT_ADR_DI_IRQ_RISING          EEP_VIRT_ADR_DI_IRQ_RISING_LOW
+#define EEP_VIRT_ADR_DI_IRQ_FALLING         EEP_VIRT_ADR_DI_IRQ_FALLING_LOW
 #endif
 
 /* How many entries of VirtAddVarTab (core/driver/eeprom.cpp) the middleware walks

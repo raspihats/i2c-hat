@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-11  CiA 401 IRQ block (ROADMAP.md): global interrupt enable 0x6005 (IRQ reg 0x23 via 0x16/0x17 - volatile arming bit, 0 after every reset; disarming, by command or CWDT timeout, dumps the capture queue and releases the IRQ line); edge-control masks 0x6007/0x6008 (IRQ regs 0x21/0x20) now EEPROM-persistent; the IRQ line is derived from the capture queue alone - a DI value read no longer releases it. BREAKING for IRQ users: capture requires the armed global enable. 0x6006 any-change is intentionally not implemented (it is rising OR falling per bit)
+Applied to: di16ac 3.0.0, di6acdq6rly 3.0.0
+
+
 ## 2026-08-08  CiA 401/301 alignment (ROADMAP.md): output polarity 0x6202 (DO 0x38/0x39) + per-channel safety mask 0x6206 (DO 0x3A/0x3B); input polarity 0x6002 (DI 0x2C/0x2D) + per-channel filter constant 0x6003 (DI 0x2A/0x2B, ms, replaces the fixed 2 ms debounce); restore factory defaults 0x1011 (0x18, 'load'-guarded, formats EEPROM + reset)
 Applied to: di16ac 2.3.0, di6acdq6rly 2.3.0, dq10rly 2.3.0, dq5rly 1.2.0, dq8rly 2.2.0
 

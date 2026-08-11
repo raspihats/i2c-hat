@@ -28,7 +28,8 @@ DigitalInputs::DigitalInputs() :
         kChannelCount(DIGITAL_INPUT_CHANNEL_COUNT),
         channels_{DIGITAL_INPUT_CHANNELS},
         irq_(IRQ_PIN),
-        polarity_(0) {
+        polarity_(0),
+        irq_enable_(false) {
 
 }
 
@@ -146,6 +147,20 @@ inline void DigitalInputs::ReleaseIRQ() {
 }
 
 /**
+  * @brief  Disarms the IRQ block: clears the global enable (CiA 401 0x6005),
+  *         dumps the capture queue and releases the IRQ line. The persistent
+  *         edge masks are untouched. Used by the host command and by the
+  *         CWDT timeout event.
+  * @param  None
+  * @retval None
+  */
+void DigitalInputs::DisarmIRQ() {
+    irq_enable_ = false;
+    irq_capture_queue_.Clear();
+    ReleaseIRQ();
+}
+
+/**
   * @brief  Gets IRQ register
   * @param  reg - Register
   * @retval Register value
@@ -180,6 +195,9 @@ uint32_t DigitalInputs::GetIRQReg(const IRQReg reg) {
             value = 0;  // This means an empty irq_queue_
         }
         break;
+    case IRQReg::DI_GLOBAL_ENABLE:
+        value = irq_enable_ ? 1 : 0;
+        break;
     default:
         value = 0;
         break;
@@ -198,29 +216,45 @@ bool DigitalInputs::SetIRQReg(const IRQReg reg, const uint32_t value) {
     bool result;
 
     result = false;
-    if(IsValid(value)) {
-        switch(reg) {
-        case IRQReg::DI_RISING_EDGE_CONTROL:
+    switch(reg) {
+    case IRQReg::DI_RISING_EDGE_CONTROL:
+        // CiA 401 0x6007, persistent
+        if(IsValid(value) and driver::Eeprom::Write(EEP_VIRT_ADR_DI_IRQ_RISING, value)) {
             for(i = 0; i < kChannelCount; i++) {
                 channels_[i].set_rising_edge_irq_enable_flag((value >> i) & 0x01);
             }
             result = true;
-            break;
-        case IRQReg::DI_FALLING_EDGE_CONTROL:
+        }
+        break;
+    case IRQReg::DI_FALLING_EDGE_CONTROL:
+        // CiA 401 0x6008, persistent
+        if(IsValid(value) and driver::Eeprom::Write(EEP_VIRT_ADR_DI_IRQ_FALLING, value)) {
             for(i = 0; i < kChannelCount; i++) {
                 channels_[i].set_falling_edge_irq_enable_flag((value >> i) & 0x01);
             }
             result = true;
-            break;
-        case IRQReg::DI_CAPTURE:
-            if(value == 0) {
-                irq_capture_queue_.Clear();
-                result = true;
-            }
-            break;
-        default:
-            result = false;
         }
+        break;
+    case IRQReg::DI_CAPTURE:
+        if(value == 0) {
+            irq_capture_queue_.Clear();
+            result = true;
+        }
+        break;
+    case IRQReg::DI_GLOBAL_ENABLE:
+        // CiA 401 0x6005: volatile arming bit
+        if(value <= 1) {
+            if(value == 1) {
+                irq_enable_ = true;
+            }
+            else {
+                DisarmIRQ();
+            }
+            result = true;
+        }
+        break;
+    default:
+        result = false;
     }
     return result;
 }
@@ -294,7 +328,7 @@ bool DigitalInputs::GetChannelFilter(const uint8_t index, uint32_t& ms) {
   * @retval None
   */
 void DigitalInputs::Init() {
-    uint32_t i, ms;
+    uint32_t i, ms, mask;
 
     // CiA 401 alignment: persistent input polarity (0x6002) and per-channel
     // filter constants (0x6003). On boards upgraded from firmware without
@@ -309,6 +343,23 @@ void DigitalInputs::Init() {
             ms = DEBOUNCE_TIME_MS;
         }
         channels_[i].Init(ms / TASK_PERIOD_MS);
+    }
+
+    // IRQ-block series: persistent edge-control masks (CiA 401 0x6007/0x6008);
+    // upgraded boards read not-found and stay at 0. The global enable (0x6005)
+    // is volatile and always starts cleared - the host arms it after
+    // commissioning, so the line never asserts with nobody listening.
+    if(not driver::Eeprom::Read(EEP_VIRT_ADR_DI_IRQ_RISING, mask)) {
+        mask = 0;
+    }
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].set_rising_edge_irq_enable_flag((mask >> i) & 0x01);
+    }
+    if(not driver::Eeprom::Read(EEP_VIRT_ADR_DI_IRQ_FALLING, mask)) {
+        mask = 0;
+    }
+    for(i = 0; i < kChannelCount; i++) {
+        channels_[i].set_falling_edge_irq_enable_flag((mask >> i) & 0x01);
     }
 }
 
@@ -332,17 +383,22 @@ void DigitalInputs::Run() {
         value |= channels_[i].state() << i;
     }
 
-    if(irq_status > 0) {
+    // Edges are captured only while the block is armed (CiA 401 0x6005); the
+    // line is derived every tick: asserted if and only if armed and captures
+    // are pending. Draining the queue (or disarming) releases it - no other
+    // path touches the line, so a plain DI read can't strand captures.
+    if((irq_status > 0) and irq_enable_) {
         if(irq_capture_queue_.IsFull()) {
             irq_capture_queue_.Get(dump);   // dump one value because queue was not read in time and must store new value
         }
         irq_capture_queue_.Put((value << 16) + irq_status);
+    }
+
+    if(irq_enable_ and (not irq_capture_queue_.IsEmpty())) {
         TriggerIRQ();
     }
     else {
-        if(irq_capture_queue_.IsEmpty()) {
-            ReleaseIRQ();
-        }
+        ReleaseIRQ();
     }
 
 //    // Encoders CW and CCW counters
@@ -372,7 +428,12 @@ void DigitalInputs::Run() {
   * @retval None
   */
 void DigitalInputs::ReceiveEvent(const uint32_t event) {
-    (void)event;
+    // CWDT timeout: the controller is gone - disarm the event block so a dead
+    // host isn't held on the line forever; the persistent masks keep the
+    // commissioning and the next reconcile re-arms via DI_GLOBAL_ENABLE
+    if(event == EVENT_CWDT_TIMEOUT) {
+        DisarmIRQ();
+    }
 }
 
 /**
@@ -441,7 +502,6 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             buffer[3] = (uint8_t)(u32_temp >> 24);
             response.set_payload(buffer, 4);
             response_flag = true;
-            ReleaseIRQ();
         }
         break;
     case Command::DI_GET_CHANNEL_STATE:
@@ -522,7 +582,8 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             irq_reg = (IRQReg)request.payload()[0];
             if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
                     (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) or
-                    (irq_reg == IRQReg::DI_CAPTURE) ) {
+                    (irq_reg == IRQReg::DI_CAPTURE) or
+                    (irq_reg == IRQReg::DI_GLOBAL_ENABLE) ) {
                 u32_temp = GetIRQReg(irq_reg);
                 buffer[0] = static_cast<int>(irq_reg);
                 buffer[1] = (uint8_t)u32_temp;
@@ -541,7 +602,8 @@ bool DigitalInputs::ProcessRequest(Frame& request, Frame& response) {
             BYTES_TO_UINT32(data + 1, u32_temp);
             if( (irq_reg == IRQReg::DI_FALLING_EDGE_CONTROL) or
                     (irq_reg == IRQReg::DI_RISING_EDGE_CONTROL) or
-                    (irq_reg == IRQReg::DI_CAPTURE) ) {
+                    (irq_reg == IRQReg::DI_CAPTURE) or
+                    (irq_reg == IRQReg::DI_GLOBAL_ENABLE) ) {
                 if(SetIRQReg(irq_reg, u32_temp)) {
                     u32_temp = GetIRQReg(irq_reg);
                     buffer[0] = static_cast<int>(irq_reg);

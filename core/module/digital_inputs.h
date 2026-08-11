@@ -40,6 +40,9 @@ private:
     // CiA 401 alignment (ROADMAP.md): 0x6002; per-channel filter times
     // (0x6003) live in the channels themselves
     uint32_t polarity_;
+    // CiA 401 0x6005: volatile arming bit, false after every reset; the
+    // persistent edge masks live in the channels
+    bool irq_enable_;
 
     bool IsValid(const uint32_t value);
     bool SetPolarity(const uint32_t value);
@@ -52,6 +55,7 @@ private:
     void ResetCounters();
     void TriggerIRQ();
     void ReleaseIRQ();
+    void DisarmIRQ();
     uint32_t GetIRQReg(const IRQReg reg);
     bool SetIRQReg(const IRQReg reg, const uint32_t value);
 };

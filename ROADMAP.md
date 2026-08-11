@@ -69,10 +69,10 @@ Notes per object:
 | `0x6000` | Read input | `DI_GET_ALL_CHANNEL_STATES` 0x20 (bulk) | **adopted** |
 | `0x6003` | Filter constant input | `DI_SET/GET_CHANNEL_FILTER` 0x2A/0x2B - persistent per-channel filter time in ms | **adopted** (2.3.0 series) |
 | `0x6002` | Change polarity input | `DI_SET/GET_POLARITY` 0x2C/0x2D - persistent per-bit invert, applied before the debouncer | **adopted** (2.3.0 series) |
-| `0x6005` | Global interrupt enable | with the three masks below: event-driven inputs over the HAT's IRQ line | proposed |
-| `0x6006` | Interrupt mask, any change | " | proposed |
-| `0x6007` | Interrupt mask, low-to-high | " | proposed |
-| `0x6008` | Interrupt mask, high-to-low | " | proposed |
+| `0x6005` | Global interrupt enable | IRQ reg 0x23 via `IRQ_SET/GET_REG` 0x17/0x16 - volatile arming bit, 0 after every reset; disarm dumps the queue and releases the line | **adopted** (3.0.0 series) |
+| `0x6006` | Interrupt mask, any change | any-change is rising OR falling per bit - a second spelling of `0x6007`+`0x6008` | n/a (derived, settled) |
+| `0x6007` | Interrupt mask, low-to-high | IRQ reg 0x21 rising edge control - persistent | **adopted** (3.0.0 series) |
+| `0x6008` | Interrupt mask, high-to-low | IRQ reg 0x20 falling edge control - persistent | **adopted** (3.0.0 series) |
 
 Notes per object:
 
@@ -84,16 +84,17 @@ Notes per object:
   choice) instead of a build-time constant, so a fast DC proximity switch
   and a slow AC contactor feedback coexist on one board. Controller side
   it is one more field in the reconcile.
-- **The interrupt block** maps onto registers the firmware already half
-  has (`irq_get_reg` 0x16 / `irq_set_reg` 0x17, currently unused by the
-  controller) plus the HAT's IRQ line to a GPIO. With per-edge masks, the
-  controller sleeps on the GPIO edge and reads inputs when it fires -
-  input latency becomes one bus transaction instead of up to one poll
-  period, without raising the poll rate for idle boards. Decisions to
-  make: IRQ line semantics (asserted until served; cleared by the DI read
-  itself, or by a dedicated ack), and behaviour when the controller is
-  gone (the CWDT trip should probably clear the assertion). This is the
-  largest joint firmware + controller effort on the list.
+- **The interrupt block** shipped in the 3.0.0 series with these decided
+  semantics: the line is derived from the capture queue alone - asserted
+  if and only if the block is armed and captures pend, so draining (or
+  disarming) releases it and a plain DI read never does. The edge masks
+  are persistent commissioning; the global enable is a volatile arming
+  bit the controller sets after every reconcile, and a CWDT trip disarms
+  the block (masks untouched) so a dead controller is never held on the
+  line. Controller side: sleep on the GPIO but treat it as a LEVEL -
+  captures stored while the line is already low make no new edge, so
+  check the line before sleeping and drain every armed board on wake.
+  Bench-validated 2026-08-11 (`DI6acDQ6rly.irq_block.robot`, 6/6).
 
 ## Device level (CiA 301 support objects)
 
@@ -128,9 +129,9 @@ Notes per object:
 | rank | piece | why |
 | --- | --- | --- |
 | shipped | `0x6206` + `0x6202` + `0x6003` + `0x6002` + `0x1011` | the 1.2.0 / 2.2.0 / 2.3.0 firmware series |
-| 1 | `0x6005`-`0x6008` + IRQ line | biggest latency win, biggest joint effort |
-| 2 | `0x1020` config signature | pays off more with every register added |
-| 3 | `0x6208` output write mask | drawer, until shared-board outputs are real |
+| shipped | `0x6005` + `0x6007`/`0x6008` + IRQ line semantics | the 3.0.0 series (DI boards; `0x6006` settled as n/a) |
+| 1 | `0x1020` config signature | pays off more with every register added |
+| 2 | `0x6208` output write mask | drawer, until shared-board outputs are real |
 
 The analog half of CiA 401 (`0x6401`/`0x6411` values, scaling, limit
 interrupts) is the same exercise for the day an AI/AQ board joins the

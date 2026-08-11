@@ -74,9 +74,15 @@ enum class Command {
 
 
 enum class IRQReg {
-    DI_FALLING_EDGE_CONTROL             = 0x20,
-    DI_RISING_EDGE_CONTROL              = 0x21,
+    DI_FALLING_EDGE_CONTROL             = 0x20, // CiA 401 0x6008, persistent
+    DI_RISING_EDGE_CONTROL              = 0x21, // CiA 401 0x6007, persistent
     DI_CAPTURE                          = 0x22, //interface to capture queue
+    // CiA 401 0x6005 global interrupt enable: volatile arming bit, 0 after
+    // every reset. Writing 0 (or a CWDT timeout) disarms the block - the
+    // capture queue is dumped and the IRQ line released - while the
+    // persistent edge masks above keep the commissioning. 0x6006 (any
+    // change) is not implemented: it is rising|falling by definition.
+    DI_GLOBAL_ENABLE                    = 0x23,
 };
 
 #endif /* COMMANDS_H_ */
