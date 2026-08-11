@@ -23,11 +23,20 @@ namespace module {
   * @param  pin: pointer to a DigitalOutputPin
   * @retval None
   */
+#ifdef STATUS_LED_CIA_303_3
+StatusLed::StatusLed() :
+        Module(TASK_DELAY_MS, TASK_PERIOD_MS),
+        pin_(STATUS_LED_PIN),
+        run_state_(RunState::PRE_OPERATIONAL),
+        pattern_() {
+}
+#else
 StatusLed::StatusLed() :
         Module(TASK_DELAY_MS, TASK_PERIOD_MS),
         pin_(STATUS_LED_PIN),
         cwdt_monitoring_(false) {
 }
+#endif
 
 /**
   * @brief  StatusLed Module receiveEvent implementation
@@ -35,12 +44,27 @@ StatusLed::StatusLed() :
   * @retval None
   */
 void StatusLed::ReceiveEvent(const uint32_t event) {
+#ifdef STATUS_LED_CIA_303_3
+    if(event == EVENT_CWDT_MONITORING) {
+        run_state_ = RunState::OPERATIONAL;
+    }
+    else if(event == EVENT_CWDT_DISABLED) {
+        run_state_ = RunState::PRE_OPERATIONAL;
+    }
+    else if(event == EVENT_CWDT_TIMEOUT) {
+        run_state_ = RunState::STOPPED;
+    }
+#else
+    // Legacy: a trip and "never supervised" deliberately look the same here,
+    // because this LED has no way to say more. Boards with an ERR LED use
+    // STATUS_LED_CIA_303_3 instead, where the two are distinct states.
     if(event == EVENT_CWDT_MONITORING) {
         cwdt_monitoring_ = true;
     }
     else if((event == EVENT_CWDT_DISABLED) or (event == EVENT_CWDT_TIMEOUT)) {
         cwdt_monitoring_ = false;
     }
+#endif
 }
 
 /**
@@ -57,6 +81,22 @@ void StatusLed::Init() {
   * @param  None
   * @retval None
   */
+#ifdef STATUS_LED_CIA_303_3
+void StatusLed::Run() {
+    switch(run_state_) {
+    case RunState::OPERATIONAL:
+        pattern_.set(LedPattern::Kind::ON);
+        break;
+    case RunState::STOPPED:
+        pattern_.set(LedPattern::Kind::SINGLE_FLASH);
+        break;
+    default:
+        pattern_.set(LedPattern::Kind::BLINKING);
+        break;
+    }
+    pin_.SetState(pattern_.Tick(TASK_PERIOD_MS));
+}
+#else
 void StatusLed::Run() {
     static uint32_t ledOnPeriodCnt = 0;
     static uint32_t ledOffPeriodCnt = 0;
@@ -114,6 +154,8 @@ void StatusLed::Run() {
         break;
     }
 }
+
+#endif /* STATUS_LED_CIA_303_3 */
 
 /**
   * @brief  Processes I2C request frame

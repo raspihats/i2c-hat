@@ -32,6 +32,9 @@ I2CHat::I2CHat() :
     // board; the board-specific modules are registered via the board.h macro.
     Register(status_led_);
     Register(communication_watchdog_);
+#ifdef ERROR_LED_PIN
+    Register(error_led_);
+#endif
     BOARD_REGISTER_MODULES
 }
 

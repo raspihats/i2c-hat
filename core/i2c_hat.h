@@ -27,6 +27,7 @@
 #include "frame/frame.h"
 #include "module/communication_watchdog.h"
 #include "module/status_led.h"
+#include "module/error_led.h"
 #include "board.h"
 
 #ifndef BOARD_MODULE_MEMBERS
@@ -49,6 +50,9 @@ private:
     /******** MODULES *******/
     module::CommunicationWatchdog communication_watchdog_;
     module::StatusLed status_led_;
+#ifdef ERROR_LED_PIN
+    module::ErrorLed error_led_;    // CiA 303-3 ERR indicator, if the board has one
+#endif
     BOARD_MODULE_MEMBERS
 
     void UpdateStatusWord();

@@ -47,6 +47,7 @@ function(add_i2c_hat_board)
         ${B_CORE_DIR}/i2c_hat.cpp
         ${B_CORE_DIR}/module/module.cpp
         ${B_CORE_DIR}/module/status_led.cpp
+        ${B_CORE_DIR}/module/error_led.cpp   # compiles to nothing without ERROR_LED_PIN
         ${B_CORE_DIR}/module/communication_watchdog.cpp
         ${B_CORE_DIR}/driver/bootloader.cpp
         ${B_CORE_DIR}/driver/eeprom.cpp
