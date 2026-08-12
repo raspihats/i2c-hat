@@ -52,19 +52,20 @@ Notes per object:
   model. Default 0 (no inversion). One commissioning hazard to respect:
   writing this register flips live pins instantly, so it is an engineering
   act - the controller reconciles it at activation, never during RUN.
-- **`0x6208` filter mask** - the drawer item, fully specified here so
-  picking it up is an implementation act, not a design session.
+- **`0x6208` filter mask** - shipped in the 3.1.0 series. The design
+  record is kept in full below, since the reasoning (what the mask gates
+  and what it deliberately does not) is the part worth re-reading.
 
-  *Concept.* A persistent per-bit mask answering one question: which
-  channels does a BULK output write affect? Bit set = the channel obeys
-  `DO_SET_VALUE`; bit clear = bulk writes flow around it, whatever value
-  they carry in that bit position. Today the controller drives unmapped
-  channels to 0 on every bulk write - the port is all-or-nothing. With
+  *Concept.* A per-bit mask answering one question: which channels does a
+  BULK output write affect? Bit set = the channel obeys `DO_SET_VALUE`;
+  bit clear = bulk writes flow around it, whatever value they carry in
+  that bit position. Without it a controller drives unmapped channels to 0
+  on every bulk write - the port is all-or-nothing. With
   the mask, an unmapped channel is genuinely nobody's: the controller
   owns its channels, a test rig / manual tool / second process owns the
-  rest via single-channel writes, and neither stomps the other. It earns
-  its place the day one board's outputs really have two masters - that is
-  the drawer condition.
+  rest via single-channel writes, and neither stomps the other. It sat in
+  the drawer until one board's outputs really had two masters, then shipped
+  with the rest of the host-convenience bundle.
 
   *Checked against a fielded DS401 implementation (Ascon Tecnologic
   IO-CB/DO-04RL manual, 2026-08-11):* it documents 6208h as a PREPROCESS
@@ -146,7 +147,7 @@ Notes per object:
 | --- | --- | --- | --- |
 | `0x1001` + EMCY | Error register | `GET_STATUS_WORD` 0x12: PORRST 0x01, SFTRST 0x02, IWDGRST 0x04, CWDT tripped 0x08; cleared when read | **adopted** |
 | `0x1011` | Restore default parameters | `RESTORE_FACTORY_DEFAULTS` 0x18, acts only on the "load" signature; formats the EEPROM and resets | **adopted** (1.2.0/2.2.0/2.3.0 series) |
-| `0x1020` | Verify configuration | a stored config signature; steady-state reconcile becomes one read | proposed |
+| `0x1020` | Verify configuration | `CONFIG_SET/GET_SIGNATURE` 0x1A/0x1B - controller-owned persistent u32, voided by the firmware when any other persistent value really changes; steady-state reconcile becomes one read | **adopted** (3.1.0 series) |
 | `0x1010` | Store parameters | not needed - each SET persists immediately (different model, settled) | n/a |
 
 Notes per object:
@@ -168,15 +169,29 @@ Notes per object:
   full per-register reconcile on mismatch. Grows in value with every
   register the block gains.
 
+  *Implemented (3.1.0 series, 2026-08-11).* The firmware's half of the
+  contract is invalidation: `Eeprom::Write` voids the signature to 0 from
+  a single choke point, placed AFTER the skip-if-unchanged guard so an
+  identical re-write of some other register does not cost the controller
+  its claim. `RESTORE_FACTORY_DEFAULTS` wipes it with everything else, and
+  0 means "no claim" - a board that has never been commissioned, or one
+  whose configuration moved under the controller's feet, reads the same.
+  The value itself is opaque to the firmware: the controller picks what it
+  means (project hash, timestamp, revision counter).
+
 ## Priority
 
 | rank | piece | why |
 | --- | --- | --- |
 | shipped | `0x6206` + `0x6202` + `0x6003` + `0x6002` + `0x1011` | the 1.2.0 / 2.2.0 / 2.3.0 firmware series |
 | shipped | `0x6005` + `0x6007`/`0x6008` + IRQ line semantics | the 3.0.0 series (DI boards; `0x6006` settled as n/a) |
-| 1 | `0x1020` config signature | pays off more with every register added |
-| 2 | `0x6208` output write mask | drawer, until shared-board outputs are real |
+| shipped | `0x1020` config signature + `0x6208` output write mask | the 3.1.0 series (with `ENTER_BOOTLOADER` 0x19, which is not a CiA object) |
 
-The analog half of CiA 401 (`0x6401`/`0x6411` values, scaling, limit
-interrupts) is the same exercise for the day an AI/AQ board joins the
-family; nothing here depends on it.
+**The digital half of CiA 401 is fully adopted - this list is empty.**
+Every object in the digital tables above is either implemented or settled
+as n/a with the reason recorded; nothing is parked in the drawer.
+
+The analog half (`0x6401`/`0x6411` values, scaling, limit interrupts) is
+the next campaign, and the same exercise: it starts when the AI board's
+hardware and its INA228 driver exist (see `boards/ai4dcv10/README.md`).
+Nothing above depends on it.
