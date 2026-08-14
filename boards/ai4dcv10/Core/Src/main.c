@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "interface.h"
-#include "driver/bootloader.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,11 +68,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  /* Must be the first statement: jumps to the ROM bootloader if the 0x19
-   * command requested it on the previous run. Runs before any init and
-   * before the IWDG ever starts (the IWDG cannot be stopped and would
-   * reset the chip mid-flash inside the bootloader). */
-  Bootloader_CheckAndEnter();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/

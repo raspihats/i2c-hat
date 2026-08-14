@@ -74,13 +74,6 @@ Reset_Handler:
   ldr   r0, =_estack
   mov   sp, r0          /* set stack pointer */
 
-/* I2C-HAT: enter the ROM bootloader iff the ENTER_BOOTLOADER (0x19) command
-   planted its magic before resetting (core/driver/bootloader.cpp). Called
-   this early - before SystemInit, the data/bss init and the C++ static
-   constructors - so the ROM inherits a true reset-state chip, exactly as
-   the hardware BOOT0 path provides. Touches only .noinit RAM. */
-  bl Bootloader_CheckAndEnter
-
 /*Check if boot space corresponds to test memory*/
  
     LDR R0,=0x00000004

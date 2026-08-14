@@ -1,19 +1,23 @@
 /*
  * bootloader.h
  *
- *  Software entry into the ROM system bootloader (no BOOT0 jumper).
+ *  Software entry into the ROM system bootloader, following ST's published
+ *  sequence ("Calling the STM32 SystemMemory Bootloader from your
+ *  application"):
+ *      #1 shut down any tasks running
+ *      #2 switch to the HSI clock source - no PLL
+ *      #3 disable interrupts
+ *      #4 set the main stack pointer (MSP) to its default value
+ *      #5 load the program counter with the SystemMemory reset vector
  *
- *  Two-step pattern, deliberately not a direct jump: the IWDG cannot be
- *  stopped once enabled and would reset the chip mid-flash inside the ROM
- *  bootloader. Bootloader_Request() plants a magic word in .noinit RAM and
- *  system-resets; Bootloader_CheckAndEnter(), called at the very top of
- *  main() BEFORE any init (and thus before the IWDG ever starts), sees the
- *  magic and jumps to system memory with the chip still in reset state.
+ *  Direct jump from the running application: no reset, no magic word in
+ *  .noinit, no startup-code hook.
  *
- *  C linkage: Bootloader_CheckAndEnter() is called from the boards'
- *  CubeMX-generated C main().
- *
- *  The board's linker script must provide a .noinit (NOLOAD) section.
+ *  Plus one addition ST's sequence does not have: the F04x BOOT0 pad is
+ *  driven high before the jump, because that ROM's empty check otherwise
+ *  hands a non-empty flash straight back to the application. That is the
+ *  thing this branch exists to test - whether the pad drive alone is enough
+ *  without the reset that master's version performs.
  */
 
 #ifndef DRIVER_BOOTLOADER_H_
@@ -23,11 +27,7 @@
 extern "C" {
 #endif
 
-/* First statement of main(): jumps to the ROM bootloader iff the magic was
- * planted by Bootloader_Request() on the previous run; otherwise returns. */
-void Bootloader_CheckAndEnter(void);
-
-/* Plants the magic and system-resets. Does not return. */
+/* Jumps to the ROM bootloader. Does not return. */
 void Bootloader_Request(void);
 
 #ifdef __cplusplus
