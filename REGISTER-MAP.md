@@ -19,7 +19,7 @@ released firmware line.
 | dq8rly | 0x50 | DO×8 | 2.3.0 | **prototype — do not target** |
 | dq10rly | 0x50 | DO×10 | 2.4.0 | |
 | di6acdq6rly | 0x60 | DI×6, DO×6 (relays), IRQ line | **3.1.0** | |
-| ai4dcv10 | 0x70 (planned) | AI×4 (INA228), STM32G0 | unreleased, in development | first G0 board |
+| ai4dcv10 | 0x70 (provisional, **to change** — conflicts) | AI×4 (INA228), STM32G0 | unreleased, in development | first G0 board |
 
 ## Transport (identical on all boards)
 

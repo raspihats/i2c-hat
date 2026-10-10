@@ -230,7 +230,7 @@ surface for all of them is [REGISTER-MAP.md](REGISTER-MAP.md).
 | dq5rly       | STM32F042K6 (LQFP32) | 0x50 | 5 relay outputs |
 | dq8rly       | STM32F042K6 (LQFP32) | 0x50 | 8 relay outputs — **prototype**, not a shipping board |
 | dq10rly      | STM32F042K6 (LQFP32) | 0x50 | 10 relay outputs |
-| ai4dcv10     | STM32G031K6 (LQFP32) | 0x70 (planned) | 4 analog channels (V/I/P via INA228) — **in development** |
+| ai4dcv10     | STM32G031K6 (LQFP32) | 0x70 (provisional, **to change** — conflicts) | 4 analog channels (V/I/P via INA228) — **in development** |
 
 The low nibble of the address comes from the board's address jumpers, read
 once at startup.

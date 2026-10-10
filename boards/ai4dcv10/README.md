@@ -60,7 +60,8 @@ cooperative scheduler better than blocking HAL master calls anyway.
   (PROTOCOL.md) at this clock; the core's 50 ms SCL-low TIMEOUTA backstop
   scales via `I2C_KERNEL_CLOCK_HZ` in `board.h`.
 - I2C1 slave PB6/PB7 (host), I2C2 master PA11/PA12 (4× INA228, addresses
-  0x40-0x43), IWDG, status LED **PC15**, address jumpers PA0-PA3.
+  0x40-0x43), IWDG, status LED **PC15**, address jumpers PA0-PA3
+  (internal pull-ups, open = high = no offset, as on the F0 boards).
   PF2 stays NRST and PA14 stays SWCLK (no BOOT0 jumper): **zero option-byte
   provisioning**, full SWD debug — keep SWD accessible on the PCB, it is
   the only recovery path if a flashed app boots but goes deaf on I2C.
@@ -96,10 +97,15 @@ entry is reset-then-jump, never a direct jump from the running app).
 
 ## Open hardware decisions (before schematic freeze)
 
-- [ ] **Base address 0x70 with 4 jumpers** overruns into the I2C reserved
-      block (0x78-0x7F) for offsets 8-15: move the base or drop ADR_3.
-- [ ] **ADR_0-3 are NOPULL** in the .ioc: needs external pull-ups on the
-      schematic, or switch them to internal pull-up in CubeMX.
+- [ ] **Base address 0x70 must change** (decided 2026-10-10): with 4
+      jumpers, offsets 8-15 land in the I2C reserved block 0x78-0x7F, and
+      0x70-0x77 is the default range of common Pi add-ons (TCA9548A/PCA954x
+      muxes, HT16K33). Pick a free 16-address block (0x40/0x50/0x60 are
+      taken) - `I2C_BASE_ADDRESS` in `board.h` is marked accordingly.
+- [x] **ADR_0-3 pull-ups**: internal pull-ups enabled in the .ioc (the F0
+      boards' convention) - no external resistors needed on the schematic.
+      Bench: with NOPULL the address wandered 0x72/0x73/0x7F across resets
+      on a floating Nucleo-G031.
 - [ ] SWD header/pogo pads on the PCB (recovery path, see above).
 
 ## TODO (firmware)

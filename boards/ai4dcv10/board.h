@@ -28,10 +28,14 @@
 #define BOARD_NAME_SIZE                     (25)
 #define BOARD_NAME                          "AI4dcv10 I2C-HAT"
 
-/* PROVISIONAL: 0x40=di16ac, 0x50=dq*, 0x60=di6acdq6rly ranges are taken.
- * The .ioc carries 4 address jumpers (PA0-PA3), but 0x70 + offsets 8..15
- * lands in the I2C reserved block at 0x78-0x7F - either the base moves or
- * jumper ADR_3 goes unused. Decide before hardware. */
+/* TO CHANGE - 0x70 is NOT the final base (decided 2026-10-10), it conflicts:
+ *   - offsets 8..15 land in the I2C reserved block 0x78-0x7F (10-bit prefix
+ *     + reserved), which i2cdetect does not even scan by default;
+ *   - 0x70-0x77 is the default range of common Pi add-ons (TCA9548A/PCA954x
+ *     I2C muxes, HT16K33 LED drivers).
+ * 0x40=di16ac, 0x50=dq*, 0x60=di6acdq6rly are taken. Pick a free 16-address
+ * block for the 4 jumpers (PA0-PA3) before schematic freeze; until then 0x70
+ * only keeps the bring-up builds running. */
 #define I2C_BASE_ADDRESS                    (0x70)
 
 /* I2C1 kernel clock (PCLK = SYSCLK = 64 MHz): scales the core's 50 ms
