@@ -95,6 +95,13 @@ No boot-jumper relay on the bench for this board. The IWDG never runs on
 the bootloader path (it cannot be stopped once enabled - that is why the
 entry is reset-then-jump, never a direct jump from the running app).
 
+Bench-validated on a Nucleo-G031 (ROM bootloader v1.2, 2026-10-10): 43/43
+round-trips, none of the F0 workarounds needed - no BOOT0 pad drive, and
+no probe-retry loop (stm32flash's first probe always succeeded). Write +
+verify of the 13 KB image takes 2.9 s at 100 kHz (some sessions ~6.9 s,
+uniformly slower blocks, never an error). **Unlike F0, a full bus scan
+does not return a lingering ROM to the app** - use `stm32flash -g 0 -a 0x56`.
+
 ## Open hardware decisions (before schematic freeze)
 
 - [ ] **Base address 0x70 must change** (decided 2026-10-10): with 4
@@ -115,8 +122,9 @@ entry is reset-then-jump, never a direct jump from the running app).
 - [ ] AI opcodes beyond the existing `0x40`-`0x48` block: power, energy,
       charge, alert thresholds (CiA 401 `0x6401` alignment for the reads)
 - [ ] `SHUNT_CAL` / shunt-value calibration via `0x47`/`0x48`
-- [ ] Hardware-validate the 0x19 → 0x56 bootloader round-trip on the bench
+- [x] Hardware-validate the 0x19 → 0x56 bootloader round-trip on the bench
       (incl. whether the F0's stm32flash first-probe resync quirk exists
-      on the G0 ROM)
+      on the G0 ROM) - validated on a Nucleo-G031, quirk absent; repeat
+      once on ai4dcv10 hardware
 - [ ] raspihats lib + raspihats-utils: `enter_bootloader()` and the
       jumperless flash procedure

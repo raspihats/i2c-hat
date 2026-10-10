@@ -67,23 +67,28 @@
  *   DECIDED: the G0 will NOT use a pad drive - the pin is not sampled, so
  *   there is nothing to fake, and PA14 must stay SWCLK. The G0 path below is
  *   deliberately pad-free.
- *   TO VALIDATE on ai4dcv10 hardware: whether the G0 ROM applies its own
- *   empty-check style fallback to a software entry. If it turns out to, the
- *   lever is the option byte, not a GPIO: clear nBOOT0 before the reset and
- *   have the application restore it via OBL_LAUNCH afterwards - persistent
- *   state, so a power cut mid-sequence leaves the board in the ROM until
- *   something jumps it back out. Only reach for that if the pad-free path
- *   proves insufficient.
- * Two more G0 notes for that bring-up:
+ *   VALIDATED on the bench (Nucleo-G031, ROM bootloader v1.2, PID 0x466,
+ *   factory option bytes, 2026-10-10): the G0 ROM applies NO empty-check
+ *   fallback to a software entry. 43/43 pad-free 0x19 round-trips landed at
+ *   0x56 and stayed there (still answering after 10 s idle, app address
+ *   silent), and stm32flash's first probe succeeded every time - the F0's
+ *   probe-retry loop is not needed either. A plain 0x13 reset returns to the
+ *   app, so the result is the jump's, not a latched FLASH_ACR.EMPTY. The
+ *   option-byte lever (clear nBOOT0, restore via OBL_LAUNCH) stays unused.
+ *   One G0 difference for hosts: a full i2cdetect scan does NOT bounce a
+ *   lingering ROM back to the application as it does on F0 - only
+ *   `stm32flash -g 0` (or a reset) does.
+ * Two more G0 notes:
  *   - Cortex-M0+ HAS VTOR, so SCB->VTOR = SYSTEM_MEMORY_BASE is available
  *     instead of the SYSCFG memory remap used below (M0 on F0 has no VTOR).
  *   - CheckAndEnter() is called from main() on G0 but from the top of
  *     Reset_Handler on F0, which is what finally made F0 work (ahead of
- *     SystemInit, data/bss init and the C++ static ctors). Moving the G0 call
- *     there means patching a CubeMX-generated startup file, so it needs the
- *     same configure-time guard the board's linker-script deltas already have.
+ *     SystemInit, data/bss init and the C++ static ctors). The bench run
+ *     above shows main() is early enough on G0, so the CubeMX startup file
+ *     stays unpatched.
  *   - Deaf-app recovery on a jumperless G0 board is the SWD pads, plus the
- *     ROM's empty check: a fully erased chip enters the bootloader by itself.
+ *     ROM's empty check: a fully erased chip enters the bootloader by itself
+ *     (seen on the bench: the blank Nucleo answered at 0x56 out of the box).
  *
  * ROM system-memory base (AN2606). The reset vector pair at its start is
  * the jump target. */
