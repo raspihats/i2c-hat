@@ -36,6 +36,42 @@ function(add_i2c_hat_board)
         set(B_CORE_DIR ${CMAKE_SOURCE_DIR}/core)
     endif()
 
+    # ---- bootloader-entry (0x19) tripwires. Both pieces are hand edits to
+    #      CubeMX-generated files; a regeneration drops them and the build
+    #      still succeeds, but 0x19 degrades to a plain reset - the same silent
+    #      failure as di16ac 3.1.0. Fail the configure instead. Registered as
+    #      configure dependencies so an edit or regeneration re-runs them. ----
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        ${BOARD_DIR}/${B_LINKER} ${BOARD_DIR}/${B_STARTUP})
+
+    # Every family: the magic word must live in RAM the startup code does not
+    # zero, or it cannot survive the NVIC_SystemReset (core/driver/bootloader.cpp).
+    file(STRINGS ${BOARD_DIR}/${B_LINKER} _noinit_section
+         REGEX "^[ \t]*\\.noinit[ \t]*\\(NOLOAD\\)")
+    if(NOT _noinit_section)
+        message(FATAL_ERROR
+            "${B_NAME}: ${B_LINKER} has no '.noinit (NOLOAD)' section - it looks "
+            "freshly CubeMX-generated. Re-add the section (KEEP(*(.noinit)) "
+            "into RAM, placed before ._user_heap_stack) or ENTER_BOOTLOADER "
+            "(0x19) becomes a plain reset. Copy it from boards/dq10rly/STM32F042K6_FLASH.ld.")
+    endif()
+
+    # F0 only: the check must run from the top of Reset_Handler, ahead of
+    # SystemInit and the data/bss init (G0 calls it from main(), in a USER
+    # CODE block that survives regeneration).
+    if(B_FAMILY STREQUAL "F0")
+        file(STRINGS ${BOARD_DIR}/${B_STARTUP} _bootloader_hook
+             REGEX "^[ \t]*bl[ \t]+Bootloader_CheckAndEnter")
+        if(NOT _bootloader_hook)
+            message(FATAL_ERROR
+                "${B_NAME}: ${B_STARTUP} does not call Bootloader_CheckAndEnter - "
+                "it looks freshly CubeMX-generated. Re-add "
+                "'bl Bootloader_CheckAndEnter' right after the stack pointer is "
+                "set in Reset_Handler, or ENTER_BOOTLOADER (0x19) becomes a "
+                "plain reset. See boards/dq10rly/startup/startup_stm32f042x6.s.")
+        endif()
+    endif()
+
     # ---- core sources: the always-on framework ----
     set(CORE_SRC
         ${B_CORE_DIR}/cooperative_os/event_bus.cpp
