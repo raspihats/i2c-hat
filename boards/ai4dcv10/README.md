@@ -114,6 +114,18 @@ does not return a lingering ROM to the app** - use `stm32flash -g 0 -a 0x56`.
       Bench: with NOPULL the address wandered 0x72/0x73/0x7F across resets
       on a floating Nucleo-G031.
 - [ ] SWD header/pogo pads on the PCB (recovery path, see above).
+- [ ] **HAT IRQ line is missing from the .ioc** - reserve the pin (open-
+      drain to the Pi, the DI boards' IRQ_PIN pattern) so the combined
+      INA228-alert-to-Pi path exists; feeds the CiA 0x6005-0x6008 IRQ
+      block (ROADMAP rank 1).
+- [ ] **INA228 ALERT routing**: per-channel to 4 MCU pins (PA4-PA7 free;
+      best attribution) vs wire-OR on one pin + DIAG_ALRT polling if pins
+      run out.
+- [ ] **Red LED per ALERT line**: LED + ~1k branch in parallel with a
+      separate ~10k logic pull-up (LED alone as pull-up floats the high
+      level to ~1.8 V, below VIH). Decide alert mode with it: transparent
+      (LED = live condition, firmware latches) vs ALATCH (a DIAG_ALRT
+      read clears the LED).
 
 ## TODO (firmware)
 
