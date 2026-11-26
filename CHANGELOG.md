@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-26  core: ENTER_BOOTLOADER waits 100 us for the BOOT0 pad before jumping to the ROM. The F04x software entry drives BOOT0 high so the ROM's live boot-pin check sees a deliberate entry, but it jumped ~1 us after the drive - not enough on every lot: a DI16ac (F042C6, lot C08H79) relaunched the application on every 0x19 while other lots (CMW576, C0SN61) entered the ROM. Pad, 680R pull-down, option bytes and ROM code were all verified identical/correct on the failing chip; a wait of ~2.5 us already fixed it 5/5, so 100 us (SysTick-timed on the reset-state 8 MHz HSI, independent of optimisation) is a 40x margin. Bench: failing DI16ac 10/10 ROM entries + regression/system/production suites all pass on 3.1.2; DQ5rly (LQFP32/PB8) 10/10 on 1.3.1. ai4dcv10 (G0, pad-free path) unchanged
+Applied to: di16ac 3.1.2, di6acdq6rly 3.1.1, dq10rly 2.4.1, dq5rly 1.3.1, dq8rly 2.3.1
+
+
 ## 2026-08-11  di16ac 3.1.1: ENTER_BOOTLOADER drives the right BOOT0 pad for its package. The 0x19 software entry drives the BOOT0 pad high so the F04x ROM's live-reading boot selector sees "jumper fitted", but the pad is package-specific: LQFP32 parts (dq5rly/dq8rly/dq10rly/di6acdq6rly) share it with PB8, the LQFP48 di16ac with PF11. 3.1.0 drove PB8 unconditionally, so on di16ac 0x19 was a no-op that merely reset the board (caught by the new Enter Bootloader Roundtrip test). The pad is now a board.h macro (BOOT0_GPIO_PORT/PIN/PERIPH) with a compile-time #error if an F0 board omits it; the four LQFP32 binaries are byte-identical to their 3.1.0 builds, so only di16ac bumps
 Applied to: di16ac 3.1.1
 

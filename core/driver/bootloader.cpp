@@ -96,6 +96,9 @@
 
 #define BOOTLOADER_MAGIC        (0xB0071ABDUL)
 
+/* F04x: BOOT0 pad settle time before the jump, in us (see CheckAndEnter). */
+#define BOOT0_SETTLE_US         (100UL)
+
 /* Survives NVIC_SystemReset (RAM keeps its content); the startup code must
  * not zero it, hence .noinit. On a cold power-up it holds junk, which is
  * exactly as safe: junk != magic. */
@@ -135,6 +138,23 @@ extern "C" void Bootloader_CheckAndEnter(void) {
     LL_AHB1_GRP1_EnableClock(BOOT0_GPIO_PERIPH);
     LL_GPIO_SetOutputPin(BOOT0_GPIO_PORT, BOOT0_GPIO_PIN);
     LL_GPIO_SetPinMode(BOOT0_GPIO_PORT, BOOT0_GPIO_PIN, LL_GPIO_MODE_OUTPUT);
+    // ...and let it settle before the ROM samples it. Jumping ~1 us after
+    // the drive is not enough on every lot: a DI16ac (F042C6, lot C08H79)
+    // relaunched the app every time while two other lots entered the ROM
+    // (bench, 2026-11-26). Pad, pull-down, option bytes and ROM code were
+    // all identical/correct on the failing chip - its GPIO input even read
+    // the pad high immediately - but a ~2.5 us wait before the jump already
+    // passed 5/5, as did 25 us, 250 us and 2.5 ms. 100 us is a 40x margin
+    // and invisible to a host. SysTick counts real core cycles, so the wait
+    // does not depend on the optimisation level; the core still runs on the
+    // reset-state 8 MHz HSI here (SystemInit has not run). SysTick is left
+    // disabled, as at reset, for the ROM.
+    SysTick->LOAD = (BOOT0_SETTLE_US * (HSI_VALUE / 1000000UL)) - 1UL;
+    SysTick->VAL = 0UL;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+    while((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0UL) {
+    }
+    SysTick->CTRL = 0UL;
 #endif
     LL_SYSCFG_SetRemapMemory(LL_SYSCFG_REMAP_SYSTEMFLASH);
 
