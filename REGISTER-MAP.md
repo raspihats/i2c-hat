@@ -75,7 +75,7 @@ released firmware line.
 |---|---|---|---|
 | 0x20 | DI_FALLING_EDGE_CONTROL | always (queue semantics since x.1.0 of each 2.x line) | CiA 401 0x6008. Per-bit mask. **Volatile < 3.0.0 (0 after reset, re-arm each boot); EEPROM-persistent ≥ 3.0.0** |
 | 0x21 | DI_RISING_EDGE_CONTROL | same | CiA 401 0x6007. Same persistence rule |
-| 0x22 | DI_CAPTURE | since the 2.1.0 capture queue | read → one queue entry `(states << 16) \| edge_status`, 0 = empty (a real entry is never 0); write 0 clears the queue. Queue depth 128, oldest dumped on overflow |
+| 0x22 | DI_CAPTURE | since the 2.1.0 capture queue | read → one queue entry `(states << 16) \| edge_status`, 0 = empty (a real entry is never 0); write 0 clears the queue. Holds 127 entries (a 128-slot ring buffer, one slot kept free), oldest dumped on overflow; status bit 0x10 while full |
 | 0x23 | DI_GLOBAL_ENABLE | **3.0.0 only** | CiA 401 0x6005. Volatile arming bit, reads 0 after every reset. Write 1 to arm, 0 to disarm (queue dumped + line released in one transaction, masks untouched). **On < 3.0.0 firmware this sub-reg answers 0xEE (unknown)** |
 
 IRQ line semantics (active-low, open-drain wired-OR across stacked boards,
