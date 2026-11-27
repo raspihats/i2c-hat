@@ -6,6 +6,52 @@ This is a **monorepo**: one shared firmware library (`core/`) plus one folder pe
 board (`boards/<name>/`). A fix in `core/` reaches every board at once — there is
 a single source of truth, no per-board branches to keep in sync.
 
+## Rule: commands follow CANopen (CiA 401)
+
+Every board's command surface is designed against the CANopen device
+profiles, so a host or a CANopen gateway can map it one to one. Applies to
+every new command and every change to an existing one (the same rule as in
+the i2c-io repo):
+
+1. **Map to the CiA object.** A command with a CiA 401 equivalent (CiA 301
+   for system commands) names that object's exact index in REGISTER-MAP.md
+   (the command's notes and the "CiA 401/301 cross-reference" table), and
+   follows its semantics: power-on value, safety (error) mode and value,
+   polarity, filter, interrupt enable, persistent or volatile as the profile
+   has it.
+2. **Match the width.** The object must fit the payload. A 32-bit value
+   uses CiA 401's 32-bit object, not the 16-bit default: 0x6402 to read an
+   analog input, 0x6412 to write an analog output, 0x6444 for an error value.
+3. **Values are Integer32.** Analog and counter values are signed Integer32
+   (`i32`). `u32` is for bitmasks, configuration words and manufacturer
+   values (ms, Hz, ...). Reject anything outside the valid range, so a value
+   never reads differently signed and unsigned.
+4. **Physical units, not left-adjusted.** Values are in a stated unit
+   (ms, µs, mV, ...), not shifted to the type's width the way CiA 401 does
+   for DAC/ADC resolutions. Give the unit in the register map; expose it
+   through the SI-unit object where the profile has one (0x6430 for analog
+   inputs).
+5. **Packing is allowed, and must be documented.** Per-channel CiA
+   Unsigned8 arrays (e.g. 0x6443 analog output error mode) may be one `u32`
+   with bit n = channel n, as the digital objects (0x6206) already are.
+   Mark it "0x6443 packed".
+6. **No CiA 401 object: say so.** Use another CiA profile when one fits
+   (counters follow CiA 406) and mark it, or mark it "manufacturer". Keep the
+   CiA patterns anyway: power-on value, safety value and safety mask on
+   every output, defined states at power-up and on a CWDT trip.
+7. **Optional variants are left out.** Don't implement CiA's 8/16-bit or
+   float duplicates of an object (0x6401/0x6403, 0x6411/0x6413, 0x6445);
+   they answer 0xEE. Say so in the register map.
+8. **Document every deviation** (type, packing, units, defaults,
+   persistence) next to the command in REGISTER-MAP.md, and check object
+   indices and types against the CiA 401 spec or a vendor DS401 EDS/manual.
+   Don't go from memory: i2c-io's octopixel AO value was first mapped to
+   0x6411 (16-bit) when its 32-bit payload belongs in 0x6412.
+
+The analog commands for the AI family (ai4dcv10) come back from i2c-io,
+which already implements them under this rule (0x6402 values, 0x6430 SI
+unit, 0x6424 / 0x6425 limits).
+
 ## Layout
 
 ```
